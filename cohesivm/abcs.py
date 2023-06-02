@@ -9,6 +9,14 @@ from . import InterfaceType
 from .database import Database
 
 
+class CompatibilityError(Exception):
+    pass
+
+
+class StateError(Exception):
+    pass
+
+
 class ExperimentState(Enum):
     INITIAL = 1
     READY = 2
@@ -28,6 +36,7 @@ class ExperimentABC(ABC):
     _interface = None
     _sample_id = None
     _selected_pixels = None
+    _progress_stream = None
     _data_stream = None
     _dataset = None
     _process = None
@@ -67,6 +76,12 @@ class ExperimentABC(ABC):
         """List of selected pixel ids which should be measured. The default are all available pixels on the
         interface."""
         return self._selected_pixels
+
+    @property
+    def progress_stream(self) -> Queue:
+        """A queue-like object where the progress of the experiment results can be sent to, e.g., for real-time
+        monitoring of the experiment."""
+        return self._progress_stream
 
     @property
     def data_stream(self) -> Queue:
@@ -169,7 +184,8 @@ class MeasurementABC(ABC):
 
     @abstractmethod
     def run(self, device: 'DeviceABC', data_stream: Queue):
-        """Actual implementation of the measurement procedure which returns the measurement results."""
+        """Actual implementation of the measurement procedure which returns the measurement results and optionally sends
+        them to the data stream."""
         pass
 
 

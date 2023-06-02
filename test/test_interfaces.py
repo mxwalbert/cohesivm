@@ -26,7 +26,7 @@ def test_sample_layout(interface):
     assert len(interface.sample_layout.keys()) == len(interface.pixels)
     for k in interface.sample_layout.keys():
         assert type(k) == str
-        assert int(k) in interface.pixels
+        assert k in interface.pixels
     location_array = np.vstack(list(interface.sample_layout.values()))
     assert np.all(np.unique(location_array, axis=1) == location_array)
 
@@ -42,8 +42,8 @@ def test_select_pixel_valid_pixel(interface):
 
 @pytest.mark.parametrize("interface", interfaces_to_be_tested)
 def test_select_pixel_invalid_pixel(interface):
-    pixel = 999999999
+    pixel = '999999999'
     while pixel in interface.pixels:
-        pixel = random.randint(111111111, 999999999)
+        pixel = str(random.randint(111111111, 999999999))
     with pytest.raises(ValueError):
         interface.select_pixel(pixel)

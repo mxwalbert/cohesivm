@@ -60,12 +60,12 @@ def test_initialize_dataset(db, metadata, stem):
 
 def test_save_and_load_data(db, stem):
     a = np.ones(shape=(100,), dtype=[('A', float), ('B', float)])
-    pixel = 0
+    pixel = '0'
     db.save(a, stem, pixel)
     b = db.load(stem, pixel)[0]
     assert (a == b).all()
     assert b.dtype.names == ('A', 'B')
-    pixels = [1, 2, 3]
+    pixels = ['1', '2', '3']
     a2 = a.copy()
     a2['A'] += 1
     a2['B'] += 1

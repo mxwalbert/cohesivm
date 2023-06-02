@@ -3,22 +3,16 @@ together and handling the worker process which executes the measurements in the 
 from multiprocessing import Process
 from typing import List
 from queue import Queue
-from .abcs import ExperimentState, ExperimentABC, InterfaceABC, MeasurementABC, DeviceABC
+from .abcs import CompatibilityError, StateError, ExperimentState, ExperimentABC
+from .abcs import DeviceABC, MeasurementABC, InterfaceABC
 from .database import Database, Metadata
 from .data_stream import FakeQueue
 
 
-class CompatibilityError(Exception):
-    pass
-
-
-class StateError(Exception):
-    pass
-
-
 class Experiment(ExperimentABC):
     def __init__(self, database: Database, device: DeviceABC, measurement: MeasurementABC, interface: InterfaceABC,
-                 sample_id: str, selected_pixels: List[str] = None, data_stream: Queue = None):
+                 sample_id: str, selected_pixels: List[str] = None,
+                 progress_stream: Queue = None, data_stream: Queue = None):
         self._state = ExperimentState.INITIAL
         self._database = database
         self._device = device
@@ -28,6 +22,9 @@ class Experiment(ExperimentABC):
         if selected_pixels is None:
             selected_pixels = interface.pixels
         self._selected_pixels = selected_pixels
+        if progress_stream is None:
+            progress_stream = FakeQueue()
+        self._progress_stream = progress_stream
         if data_stream is None:
             data_stream = FakeQueue()
         self._data_stream = data_stream
@@ -97,6 +94,7 @@ class Experiment(ExperimentABC):
             raise StateError(f"{state_messages[self.state]} Current state: {self.state}.")
 
         for pixel in self.selected_pixels:
+            self.progress_stream.put(pixel)
             self.interface.select_pixel(pixel)
             data = self.measurement.run(self.device, self.data_stream)
             self.database.save(data, self.dataset, pixel)
