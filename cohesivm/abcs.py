@@ -1,5 +1,5 @@
 """Module containing the abstract base classes."""
-from multiprocessing import Process
+import multiprocessing as mp
 from enum import Enum
 from abc import ABC, abstractmethod
 from queue import Queue
@@ -36,34 +36,37 @@ class ExperimentABC(ABC):
     _interface = None
     _sample_id = None
     _selected_pixels = None
-    _progress_stream = None
     _data_stream = None
     _dataset = None
     _process = None
 
     @property
     def state(self) -> ExperimentState:
-        """The current state of the experiment which should be a member of an Enum subclass."""
-        return self._state
+        """The current state of the experiment stored in a ``multiprocessing.Value``."""
+        return ExperimentState(self._state.value)
+
+    @state.setter
+    def state(self, new_value: ExperimentState):
+        self._state.value = new_value.value
 
     @property
     def database(self) -> Database:
-        """An instance of the Database class."""
+        """An instance of the ``Database`` class."""
         return self._database
 
     @property
     def device(self) -> 'DeviceABC':
-        """An instance of a class which inherits the DeviceABC."""
+        """An instance of a class which inherits the ``DeviceABC``."""
         return self._device
 
     @property
     def measurement(self) -> 'MeasurementABC':
-        """An instance of a class which inherits the MeasurementABC."""
+        """An instance of a class which inherits the ``MeasurementABC``."""
         return self._measurement
 
     @property
     def interface(self) -> 'InterfaceABC':
-        """An instance of a class which inherits the InterfaceABC."""
+        """An instance of a class which inherits the ``InterfaceABC``."""
         return self._interface
 
     @property
@@ -74,14 +77,8 @@ class ExperimentABC(ABC):
     @property
     def selected_pixels(self) -> List[str]:
         """List of selected pixel ids which should be measured. The default are all available pixels on the
-        interface."""
+        `interface`."""
         return self._selected_pixels
-
-    @property
-    def progress_stream(self) -> Queue:
-        """A queue-like object where the progress of the experiment results can be sent to, e.g., for real-time
-        monitoring of the experiment."""
-        return self._progress_stream
 
     @property
     def data_stream(self) -> Queue:
@@ -95,29 +92,38 @@ class ExperimentABC(ABC):
         return self._dataset
 
     @property
-    def process(self) -> Process:
+    def process(self) -> mp.Process:
         """The process which runs the measurements in the background."""
         return self._process
 
     @abstractmethod
-    def _check_compatibility(self):
-        """This method should be run during initialization of the object and check if the measurement, device, and
-        interface are compatible."""
+    def __check_compatibility(self):
+        """This method should be run during initialization of the object and check if the `measurement`, `device` and
+        `interface` are compatible."""
         pass
 
     @abstractmethod
     def setup(self):
-        """Generates the Metadata object and initializes the dataset in the database."""
+        """Generates the ``Metadata`` object and initializes the dataset in the database. Populates the `dataset`
+        property. Changes the `state` to ``ExperimentState.READY``."""
         pass
 
     @abstractmethod
     def start(self):
-        """Starting the experiment which should be executed by a separate worker process."""
+        """Starts the experiment which is executed by a separate worker process. Changes the `state` to
+        ``ExperimentState.RUNNING``."""
         pass
 
     @abstractmethod
+    def __execute(self):
+        """Runs the actual measurements in a separate ``multiprocessing.Process`` and generates/updates the `progress`
+        property which is a ``multiprocessing.Array``. Changes the `state` to ``ExperimentState.FINISHED`` after
+        completion."""
+
+    @abstractmethod
     def abort(self):
-        """Aborting the experiment which should terminate the worker process."""
+        """Aborting the experiment by terminating the ``multiprocessing.Process``. Changes the `state` to
+        ``ExperimentState.ABORTED``."""
         pass
 
 
@@ -173,19 +179,19 @@ class MeasurementABC(ABC):
     @property
     def required_channels(self) -> List[Tuple]:
         """A list of required channels given as tuple of possible channel classes which will be checked against the
-        `channels` list of the Device."""
+        `channels` list of the ``Device``."""
         return self._required_channels
 
     @property
     def settings(self) -> Dict[str, np.ndarray]:
         """A dictionary which holds the settings of the measurement and is generated at object initialization. Each
-        setting should have unique initials, e.g., 'start_voltage' <=> 'sv'."""
+        setting should have unique initials, e.g., ``start_voltage`` <=> 'sv'."""
         return self._settings
 
     @abstractmethod
     def run(self, device: 'DeviceABC', data_stream: Queue):
         """Actual implementation of the measurement procedure which returns the measurement results and optionally sends
-        them to the data stream."""
+        them to the ``data_stream``."""
         pass
 
 
@@ -198,16 +204,16 @@ class DeviceABC(ABC):
 
     @property
     def connection_args(self) -> Dict[str, Any]:
-        """A dictionary of connection arguments which are used in the connect method."""
+        """A dictionary of connection arguments which are used in the ``connect`` method."""
         return self._connection_args
 
     @property
     def channels(self) -> List[Any]:
-        """A list of channel objects."""
+        """A list of ``Channel`` instances."""
         return self._channels
 
     @abstractmethod
     def connect(self):
         """This method must be implemented as a context manager which stores the resource in the property
-        `_connection`."""
+        `__connection`."""
         pass

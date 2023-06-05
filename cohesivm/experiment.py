@@ -1,6 +1,6 @@
 """Module containing the Experiment class which is responsible for packaging the multiple components of an experiment
 together and handling the worker process which executes the measurements in the background."""
-from multiprocessing import Process
+import multiprocessing as mp
 from typing import List
 from queue import Queue
 from .abcs import CompatibilityError, StateError, ExperimentState, ExperimentABC
@@ -10,10 +10,26 @@ from .data_stream import FakeQueue
 
 
 class Experiment(ExperimentABC):
+    """A statemachine which packages the components of an experiment (device, measurement and interface), checks
+    their compatibility, executes the measurements in a separate process and keeps track of the progress."""
+
     def __init__(self, database: Database, device: DeviceABC, measurement: MeasurementABC, interface: InterfaceABC,
-                 sample_id: str, selected_pixels: List[str] = None,
-                 progress_stream: Queue = None, data_stream: Queue = None):
-        self._state = ExperimentState.INITIAL
+                 sample_id: str, selected_pixels: List[str] = None, data_stream: Queue = None):
+        """Initializes the experiment and creates a new multiprocessing.Value which holds the current state.
+
+        :param database: An instance of the Database class.
+        :param device: An instance of a class which inherits the DeviceABC.
+        :param measurement: An instance of a class which inherits the MeasurementABC.
+        :param interface: An instance of a class which inherits the InterfaceABC.
+        :param sample_id: The string identifier of the sample which should be unique in the database.
+        :param selected_pixels: List of selected pixel ids which should be measured. The default are all available
+            pixels on the `interface`.
+        :param data_stream: A queue-like object where the measurement results can be sent to, e.g., for real-time
+            plotting of the measurement.
+        :raises CompatibilityError: If the provided components (device, measurement and interface) are not compatible
+            with each other.
+        """
+        self._state = mp.Value('i', ExperimentState.INITIAL.value)
         self._database = database
         self._device = device
         self._measurement = measurement
@@ -22,15 +38,12 @@ class Experiment(ExperimentABC):
         if selected_pixels is None:
             selected_pixels = interface.pixels
         self._selected_pixels = selected_pixels
-        if progress_stream is None:
-            progress_stream = FakeQueue()
-        self._progress_stream = progress_stream
         if data_stream is None:
             data_stream = FakeQueue()
         self._data_stream = data_stream
-        self._check_compatibility()
+        self.__check_compatibility()
 
-    def _check_compatibility(self):
+    def __check_compatibility(self):
         if self.interface.interface_type is not self.measurement.interface_type:
             raise CompatibilityError(f"The interface (InterfaceType: {self.interface.interface_type}) and the "
                                      f"measurement (InterfaceType: {self.measurement.interface_type}) are not "
@@ -67,7 +80,7 @@ class Experiment(ExperimentABC):
 
         self._dataset = self.database.initialize_dataset(metadata)
 
-        self._state = ExperimentState.READY
+        self.state = ExperimentState.READY
 
     def start(self):
         state_messages = {
@@ -79,11 +92,11 @@ class Experiment(ExperimentABC):
         if self.state is not ExperimentState.READY:
             raise StateError(f"{state_messages[self.state]} Current state: {self.state}.")
 
-        self._state = ExperimentState.RUNNING
+        self.state = ExperimentState.RUNNING
 
-        self._process = Process(target=self._execute)
+        self._process = mp.Process(target=self.__execute)
 
-    def _execute(self):
+    def __execute(self):
         state_messages = {
             ExperimentState.INITIAL: "The experiment must be setup before it can be stared!",
             ExperimentState.READY: "The experiment must be started before it can be executed!",
@@ -94,12 +107,11 @@ class Experiment(ExperimentABC):
             raise StateError(f"{state_messages[self.state]} Current state: {self.state}.")
 
         for pixel in self.selected_pixels:
-            self.progress_stream.put(pixel)
             self.interface.select_pixel(pixel)
             data = self.measurement.run(self.device, self.data_stream)
             self.database.save(data, self.dataset, pixel)
 
-        self._state = ExperimentState.FINISHED
+        self.state = ExperimentState.FINISHED
 
     def abort(self):
         state_messages = {
@@ -113,4 +125,4 @@ class Experiment(ExperimentABC):
 
         self.process.terminate()
 
-        self._state = ExperimentState.ABORTED
+        self.state = ExperimentState.ABORTED

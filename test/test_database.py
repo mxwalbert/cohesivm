@@ -7,7 +7,7 @@ import os
 
 cases_metadata_exceptions = [
     ({1: np.array([1])}, {'0': np.array([0.5, 0.5])}, TypeError),
-    ({'a': np.array([1])}, {'0': [0.5, 0.5]}, TypeError),
+    ({'a': [1]}, {'0': 0.5}, ValueError),
     ({'a': np.array([1])}, {'0': np.array(0.5)}, ValueError)
 ]
 
@@ -20,7 +20,7 @@ def test_metadata_exceptions(settings, sample_layout, expected):
 
 @pytest.fixture
 def metadata():
-    settings = {'a': np.array([1]), 'test_b': np.array([2, 3]), 'test_c': np.array([4])}
+    settings = {'a': np.array([1]), 'test_b': [2, 3], 'test_c': [4]}
     sample_layout = {'0': np.array([0.5, 0.5])}
     return database.Metadata(measurement='Test',
                              settings=settings,
@@ -46,7 +46,7 @@ def stem(db, metadata):
 def test_initialize_dataset(db, metadata, stem):
     with h5py.File(db.path, "r") as h5:
         assert {metadata.measurement, 'SAMPLES'} == set(h5.keys())
-        assert h5[stem] == h5['SAMPLES'][metadata.sample_id][db._datetime]
+        assert h5[stem] == h5['SAMPLES'][metadata.sample_id][db._timestamp]
     for _ in range(3):
         metadata.measurement = 'Test2'
         assert db.initialize_dataset(metadata)

@@ -12,7 +12,8 @@ class Metadata:
     """
     Contains the metadata of the experiment which is stored in the database.
     """
-    def __init__(self, measurement: str, settings: dict, sample_id: str, sample_layout: dict, dt: datetime = None):
+    def __init__(self, measurement: str, settings: Dict[str, np.ndarray] | Dict[str, Iterable], sample_id: str,
+                 sample_layout: Dict[str, np.ndarray] | Dict[str, Iterable], timestamp: datetime = None):
         """Initializes Metadata.
 
         :param measurement: Name of the measurement procedure as implemented in the corresponding class.
@@ -22,57 +23,92 @@ class Metadata:
         :param sample_id: Unique identifier of the sample which is used for the dataset name.
         :param sample_layout: Dictionary containing the pixel ids and their location on the sample. Should be generated
             by the interface object. The keys must be strings and the values must be one-dimensional numpy arrays.
-        :param dt: Datetime, e.g., begin of the measurement, in UTC time.
+        :param timestamp: Datetime, e.g., begin of the measurement, in UTC time.
         :raises TypeError: If the type of any key in `settings` or `sample_layout` is not a string, if the type of any
             value in `settings` or `sample_layout` is not a numpy array or if the dtype of any value in `settings` or
-            `sample_layout` is not numeric.
+            `sample_layout` is not numeric. Also, if `measurement` or `sample_id` cannot be cast to a string.
         :raises ValueError: If any value in `settings` or `sample_layout` is not a one-dimensional numpy array.
         """
 
-        self.settings = settings
         self.measurement = measurement
+        self.settings = settings
         self.sample_id = sample_id
         self.sample_layout = sample_layout
-        if not dt:
-            dt = datetime.utcnow()
-        self.datetime = np.array([dt.isoformat()]).astype('S')
+        if not timestamp:
+            timestamp = datetime.utcnow()
+        self.timestamp = timestamp
+
+    @property
+    def measurement(self) -> str:
+        return self._measurement
+
+    @measurement.setter
+    def measurement(self, new_value: str):
+        try:
+            new_value = str(new_value)
+        except Exception:
+            raise TypeError("The new value for the `measurement` property must be of type string! Casting it failed.")
+        self._measurement = new_value
 
     @property
     def settings(self) -> Dict[str, np.ndarray]:
         return self._settings
 
     @settings.setter
-    def settings(self, new_value):
+    def settings(self, new_value: Dict[str, np.ndarray] | Dict[str, Iterable]):
         self.__check_database_dict(new_value)
         self._settings = new_value
         self.__parse_settings_string()
+
+    @property
+    def sample_id(self) -> str:
+        return self._sample_id
+
+    @sample_id.setter
+    def sample_id(self, new_value: str):
+        try:
+            new_value = str(new_value)
+        except Exception:
+            raise TypeError("The new value for the `sample_id` property must be of type string! Casting it failed.")
+        self._sample_id = new_value
 
     @property
     def sample_layout(self) -> Dict[str, np.ndarray]:
         return self._sample_layout
 
     @sample_layout.setter
-    def sample_layout(self, new_value):
+    def sample_layout(self, new_value: Dict[str, np.ndarray] | Dict[str, Iterable]):
         self.__check_database_dict(new_value)
         self._sample_layout = new_value
 
+    @property
+    def timestamp(self) -> np.ndarray:
+        return self._timestamp
+
+    @timestamp.setter
+    def timestamp(self, new_value: datetime):
+        if type(new_value) is not datetime:
+            raise TypeError("The `timestamp` property must be of type datetime.datetime!")
+        self._timestamp = np.array([new_value.isoformat()]).astype('S')
+
     @staticmethod
     def __check_database_dict(database_dict):
-        for k, v in database_dict.items():
+        for k in database_dict.keys():
             if type(k) != str:
                 raise TypeError(f'Type of key {k} must be string!')
-            if type(v) != np.ndarray:
-                raise TypeError(f'Type of value {v} (key={k}) must be np.ndarray!')
-            if not np.issubdtype(v.dtype, np.number):
-                raise TypeError(f'DType of numpy array {v} (key={k}) must be numeric!')
-            if v.ndim != 1:
-                raise ValueError(f'Numpy array must be one-dimensional! Shape of {k}:{v} is {v.shape}.')
+            if type(database_dict[k]) != np.ndarray:
+                try:
+                    database_dict[k] = np.array(database_dict[k])
+                except Exception:
+                    raise TypeError(f'Type of {database_dict[k]} (key={k}) must be np.ndarray! Casting it failed.')
+            if not np.issubdtype(database_dict[k].dtype, np.number):
+                raise TypeError(f'DType of numpy array {database_dict[k]} (key={k}) must be numeric!')
+            if database_dict[k].ndim != 1:
+                raise ValueError(f"Numpy array must be one-dimensional! "
+                                 f"Shape of '{k}':{database_dict[k]} is {database_dict[k].shape}.")
 
     def __parse_settings_string(self):
         self.settings_string = self.parse_settings_string(self._settings)
-
-    def copy(self) -> Metadata:
-        return copy.deepcopy(self)
 
     @staticmethod
     def parse_settings_string(settings: dict) -> str:
@@ -86,6 +122,10 @@ class Metadata:
             prefix = ''.join([kk[0] for kk in k.split('_')])
             parts.append(f"{prefix}:{'-'.join(v.astype(str))}")
         return ','.join(parts)
+
+    def copy(self) -> Metadata:
+        """Returns a deepcopy of the Metadata instance."""
+        return copy.deepcopy(self)
 
 
 class Database:
@@ -112,16 +152,25 @@ class Database:
                 db.create_group('SAMPLES')
         elif not path.is_file():
             raise IsADirectoryError('The provided path is a directory but should be an HDF5 file.')
-        self.path = path
-        self._datetime = datetime.utcnow().isoformat()
+        self._path = path
+        self.__timestamp = datetime.utcnow().isoformat()
 
     @property
-    def datetime(self) -> str:
+    def path(self) -> pathlib.Path:
+        return self._path
+
+    @property
+    def timestamp(self) -> str:
         """UTC datetime string in ISO format which is updated to the current time before it is returned."""
-        while self._datetime == datetime.utcnow().isoformat():
+        while self.__timestamp == datetime.utcnow().isoformat():
             pass
-        self._datetime = datetime.utcnow().isoformat()
-        return self._datetime
+        self.__timestamp = datetime.utcnow().isoformat()
+        return self.__timestamp
+
+    @property
+    def _timestamp(self) -> str:
+        """UTC datetime string in ISO format without updating it."""
+        return self.__timestamp
 
     def initialize_dataset(self, m: Metadata) -> str:
         """Pre-structures the data in groups according to the metadata and returns the stem of the dataset.
@@ -130,7 +179,7 @@ class Database:
             in the database alongside the data.
         :returns: Stem of the dataset path in the database.
         """
-        stem = f'/{m.measurement}/{m.settings_string}/{self.datetime}-{m.sample_id}'
+        stem = f'/{m.measurement}/{m.settings_string}/{self.timestamp}-{m.sample_id}'
         with h5py.File(self.path, "a") as db:
             if m.measurement not in db.keys():
                 db.create_group(m.measurement)
@@ -141,10 +190,10 @@ class Database:
             data_group = db.create_group(stem)
             for k, v in m.sample_layout.items():
                 data_group.attrs.create(k, v)
-            data_group.attrs.create('datetime', m.datetime)
+            data_group.attrs.create('datetime', m.timestamp)
             if m.sample_id not in db['SAMPLES'].keys():
                 db['SAMPLES'].create_group(m.sample_id)
-            db['SAMPLES'][m.sample_id][self.datetime] = h5py.SoftLink(stem)
+            db['SAMPLES'][m.sample_id][self.timestamp] = h5py.SoftLink(stem)
         return stem
 
     def save(self, data: np.ndarray, stem: str, pixel: str = 0):

@@ -27,10 +27,10 @@ class CurrentVoltageCharacteristic(MeasurementABC):
         """
         if voltage_step <= 0:
             raise ValueError('Voltage step must be larger than 0!')
-        self._start_voltage = start_voltage
-        self._end_voltage = end_voltage
-        self._voltage_step = voltage_step
-        self._hysteresis = hysteresis
+        self.__start_voltage = start_voltage
+        self.__end_voltage = end_voltage
+        self.__voltage_step = voltage_step
+        self.__hysteresis = hysteresis
         self._settings = {
             'sv': np.array(start_voltage),
             'ev': np.array(end_voltage),
@@ -48,19 +48,19 @@ class CurrentVoltageCharacteristic(MeasurementABC):
         :returns: A Numpy structured array with tuples of datapoints: ('Voltage (V)', 'Current (A)').
         """
         results = []
-        set_voltage = self._start_voltage
-        inverse = 1 if self._start_voltage > self._end_voltage else 0
+        set_voltage = self.__start_voltage
+        inverse = 1 if self.__start_voltage > self.__end_voltage else 0
         with device.connect():
-            while (set_voltage < self._end_voltage) ^ inverse or set_voltage == self._end_voltage:
+            while (set_voltage < self.__end_voltage) ^ inverse or set_voltage == self.__end_voltage:
                 result = device.channels[0].source_and_measure(set_voltage)
                 results.append(result)
                 data_stream.put(result)
-                set_voltage += self._voltage_step * (-1) ** inverse
-            if self._hysteresis:
-                set_voltage -= self._voltage_step * (-1) ** inverse
-                while (set_voltage > self._start_voltage) ^ inverse or set_voltage == self._start_voltage:
+                set_voltage += self.__voltage_step * (-1) ** inverse
+            if self.__hysteresis:
+                set_voltage -= self.__voltage_step * (-1) ** inverse
+                while (set_voltage > self.__start_voltage) ^ inverse or set_voltage == self.__start_voltage:
                     result = device.channels[0].source_and_measure(set_voltage)
                     results.append(result)
                     data_stream.put(result)
-                    set_voltage -= self._voltage_step * (-1) ** inverse
+                    set_voltage -= self.__voltage_step * (-1) ** inverse
         return np.array(results, dtype=[('Voltage (V)', float), ('Current (A)', float)])

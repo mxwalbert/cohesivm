@@ -19,45 +19,45 @@ class OssilaX200Channel:
     """Implements the properties and methods which all Ossila X200 channels have in common."""
 
     _identifier = None
-    _connection = None
-    _settings = None
+    __connection = None
+    __settings = None
 
     @property
     def identifier(self) -> str:
         """String identifier of the channel."""
         return self._identifier
 
-    def _set_property(self, name: str, value: Any):
-        method = getattr(self._connection[self._identifier].set, name)
+    def __set_property(self, name: str, value: Any):
+        method = getattr(self.__connection[self.identifier].set, name)
         method(value, response=0)
         time.sleep(0.01)
 
-    def _check_settings(self):
+    def __check_settings(self):
         raise NotImplementedError
 
-    def _apply_settings(self):
-        self._check_settings()
-        for name, value in self._settings.items():
-            self._set_property(name, value)
+    def __apply_settings(self):
+        self.__check_settings()
+        for name, value in self.__settings.items():
+            self.__set_property(name, value)
 
     def change_setting(self, setting, value):
-        """Modifies the `_settings` property and overwrites the settings on the device.
+        """Modifies the `__settings` property and overwrites the settings on the device.
 
-        :param setting: String key of the setting in the `_settings' property. This is the parameter name in the
+        :param setting: String key of the setting in the `__settings' property. This is the parameter name in the
             __init__ method without the leading 's_', e.g., 'osr' for the parameter `s_osr`.
         :param value: New value of the setting.
         """
-        self._settings[setting] = value
-        self._apply_settings()
+        self.__settings[setting] = value
+        self.__apply_settings()
 
     def enable(self):
         """Applies the settings and enables the channel."""
-        self._apply_settings()
-        self._set_property('enable', True)
+        self.__apply_settings()
+        self.__set_property('enable', True)
 
     def disable(self):
         """Disables the channel."""
-        self._set_property('enable', False)
+        self.__set_property('enable', False)
 
 
 class OssilaX200SMUChannel(SourceMeasureUnitChannel, OssilaX200Channel):
@@ -87,13 +87,13 @@ class OssilaX200SMUChannel(SourceMeasureUnitChannel, OssilaX200Channel):
             raise ValueError("Identifier of the SMU channel must be 'smu1' or 'smu2'!")
         self._identifier = identifier
         self._auto_range = auto_range
-        self._settings = {
+        self.__settings = {
             'delay': Decimal(s_delay),
             'filter': s_filter,
             'osr': s_osr,
             'range': s_range
         }
-        self._check_settings()
+        self.__check_settings()
 
     @property
     def auto_range(self) -> bool:
@@ -104,30 +104,30 @@ class OssilaX200SMUChannel(SourceMeasureUnitChannel, OssilaX200Channel):
         """Enable or disable the use of the automatic current range selection."""
         self._auto_range = new_value
 
-    def _check_settings(self):
-        if type(self._settings['delay']) is not Decimal:
+    def __check_settings(self):
+        if type(self.__settings['delay']) is not Decimal:
             raise TypeError('Setting `delay` must be Decimal!')
-        if self._settings['delay'] < 0:
+        if self.__settings['delay'] < 0:
             raise ValueError('Setting `delay` must not be negative!')
-        if type(self._settings['filter']) is not int:
+        if type(self.__settings['filter']) is not int:
             raise TypeError('Setting `filter` must be int!')
-        if self._settings['filter'] < 0:
+        if self.__settings['filter'] < 0:
             raise ValueError('Setting `filter` must not be negative!')
-        if self._settings['osr'] not in range(20):
+        if self.__settings['osr'] not in range(20):
             raise ValueError('Setting `osr` must be in [0,19]!')
-        if self._settings['range'] not in range(1, 6):
+        if self.__settings['range'] not in range(1, 6):
             raise ValueError('Setting `range` must be in [1,5]!')
 
     def disable(self):
         """Sets the source voltage to 0 V and disables the channel."""
-        self._set_property('voltage', Decimal(0))
-        self._set_property('enable', False)
+        self.__set_property('voltage', Decimal(0))
+        self.__set_property('enable', False)
 
     def measure_voltage(self):
-        return self._connection[self._identifier].measurev()[0]
+        return self.__connection[self.identifier].measurev()[0]
 
     def measure_current(self):
-        return self._connection[self._identifier].measurei()[0]
+        return self.__connection[self.identifier].measurei()[0]
 
     def source_voltage(self, voltage: float):
         """Sets the output voltage to the defined value.
@@ -137,14 +137,14 @@ class OssilaX200SMUChannel(SourceMeasureUnitChannel, OssilaX200Channel):
         """
         if abs(voltage) > 10:
             raise ValueError('Absolute voltage must not exceed 10 V!')
-        self._set_property('voltage', Decimal(voltage))
+        self.__set_property('voltage', Decimal(voltage))
 
     def _find_range(self, voltage: float):
-        self._set_property('range', 1)
-        self._set_property('voltage', Decimal(voltage))
+        self.__set_property('range', 1)
+        self.__set_property('voltage', Decimal(voltage))
         for i in range(len(self.current_ranges)):
             if abs(self.measure_current()) < self.current_ranges[i+1]:
-                self._set_property('range', i+2)
+                self.__set_property('range', i + 2)
             else:
                 break
 
@@ -159,7 +159,7 @@ class OssilaX200SMUChannel(SourceMeasureUnitChannel, OssilaX200Channel):
             raise ValueError('Absolute voltage must not exceed 10 V!')
         if self._auto_range:
             self._find_range(voltage)
-        return self._connection[self._identifier].oneshot(Decimal(voltage))[0]
+        return self.__connection[self.identifier].oneshot(Decimal(voltage))[0]
 
 
 class OssilaX200VsenseChannel(VoltmeterChannel, OssilaX200Channel):
@@ -178,16 +178,16 @@ class OssilaX200VsenseChannel(VoltmeterChannel, OssilaX200Channel):
         if identifier not in ['vsense1', 'vsense2']:
             raise ValueError("Identifier of the voltmeter channel must be 'vsense1' or 'vsense2'!")
         self._identifier = identifier
-        self._settings = {
+        self.__settings = {
             'osr': s_osr
         }
 
-    def _check_settings(self):
-        if self._settings['osr'] not in range(20):
+    def __check_settings(self):
+        if self.__settings['osr'] not in range(20):
             raise ValueError('Setting `osr` must be in [0,19]!')
 
     def measure_voltage(self):
-        return self._connection[self._identifier].measure()[0]
+        return self.__connection[self.identifier].measure()[0]
 
 
 class OssilaX200(DeviceABC):
@@ -230,12 +230,12 @@ class OssilaX200(DeviceABC):
         """
         connection = xtralien.Device(**self._connection_args)
         for channel in self._channels:
-            channel._connection = connection
+            channel.__connection = connection
             channel.enable()
         try:
             yield
         finally:
             for channel in self._channels:
                 channel.disable()
-                channel._connection = None
+                channel.__connection = None
             connection.close()
