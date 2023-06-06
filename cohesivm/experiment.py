@@ -2,7 +2,6 @@
 together and handling the worker process which executes the measurements in the background."""
 import multiprocessing as mp
 from typing import List
-from queue import Queue
 from .abcs import CompatibilityError, StateError, ExperimentState, ExperimentABC
 from .abcs import DeviceABC, MeasurementABC, InterfaceABC
 from .database import Database, Metadata
@@ -14,7 +13,7 @@ class Experiment(ExperimentABC):
     their compatibility, executes the measurements in a separate process and keeps track of the progress."""
 
     def __init__(self, database: Database, device: DeviceABC, measurement: MeasurementABC, interface: InterfaceABC,
-                 sample_id: str, selected_pixels: List[str] = None, data_stream: Queue = None):
+                 sample_id: str, selected_pixels: List[str] = None, data_stream: mp.Queue = None):
         """Initializes the experiment and creates a new multiprocessing.Value which holds the current state.
 
         :param database: An instance of the Database class.
@@ -29,7 +28,7 @@ class Experiment(ExperimentABC):
         :raises CompatibilityError: If the provided components (device, measurement and interface) are not compatible
             with each other.
         """
-        self._state = mp.Value('i', ExperimentState.INITIAL.value)
+        self.__state = mp.Value('i', ExperimentState.INITIAL.value)
         self._database = database
         self._device = device
         self._measurement = measurement
@@ -41,9 +40,11 @@ class Experiment(ExperimentABC):
         if data_stream is None:
             data_stream = FakeQueue()
         self._data_stream = data_stream
-        self.__check_compatibility()
+        self._check_compatibility()
+        ExperimentABC.__init__(self, self.__state, self._database, self._device, self._measurement, self._interface,
+                               self._sample_id, self._selected_pixels, self._data_stream)
 
-    def __check_compatibility(self):
+    def _check_compatibility(self):
         if self.interface.interface_type is not self.measurement.interface_type:
             raise CompatibilityError(f"The interface (InterfaceType: {self.interface.interface_type}) and the "
                                      f"measurement (InterfaceType: {self.measurement.interface_type}) are not "
@@ -80,7 +81,7 @@ class Experiment(ExperimentABC):
 
         self._dataset = self.database.initialize_dataset(metadata)
 
-        self.state = ExperimentState.READY
+        self._state = ExperimentState.READY
 
     def start(self):
         state_messages = {
@@ -92,11 +93,11 @@ class Experiment(ExperimentABC):
         if self.state is not ExperimentState.READY:
             raise StateError(f"{state_messages[self.state]} Current state: {self.state}.")
 
-        self.state = ExperimentState.RUNNING
+        self._state = ExperimentState.RUNNING
 
-        self._process = mp.Process(target=self.__execute)
+        self._process = mp.Process(target=self._execute)
 
-    def __execute(self):
+    def _execute(self):
         state_messages = {
             ExperimentState.INITIAL: "The experiment must be setup before it can be stared!",
             ExperimentState.READY: "The experiment must be started before it can be executed!",
@@ -106,12 +107,17 @@ class Experiment(ExperimentABC):
         if self.state is not ExperimentState.RUNNING:
             raise StateError(f"{state_messages[self.state]} Current state: {self.state}.")
 
+        self._current_pixel_idx = mp.Value('i', -1)
+
         for pixel in self.selected_pixels:
+            self._current_pixel_idx.value = self.current_pixel_idx + 1
             self.interface.select_pixel(pixel)
             data = self.measurement.run(self.device, self.data_stream)
             self.database.save(data, self.dataset, pixel)
 
-        self.state = ExperimentState.FINISHED
+        self._current_pixel_idx = None
+
+        self._state = ExperimentState.FINISHED
 
     def abort(self):
         state_messages = {
@@ -123,6 +129,8 @@ class Experiment(ExperimentABC):
         if self.state is not ExperimentState.RUNNING:
             raise StateError(f"{state_messages[self.state]} Current state: {self.state}.")
 
-        self.process.terminate()
+        self._current_pixel_idx = None
 
-        self.state = ExperimentState.ABORTED
+        self._state = ExperimentState.ABORTED
+
+        self.process.terminate()

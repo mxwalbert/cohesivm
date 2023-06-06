@@ -1,10 +1,11 @@
 """Implements the Measurement class for obtaining the current-voltage characteristic."""
 from __future__ import annotations
 import numpy as np
-from queue import Queue
+import multiprocessing as mp
 from .. import InterfaceType
 from ..abcs import MeasurementABC, DeviceABC
 from ..channels import SourceMeasureUnitChannel
+from ..data_stream import FakeQueue
 
 
 class CurrentVoltageCharacteristic(MeasurementABC):
@@ -37,8 +38,9 @@ class CurrentVoltageCharacteristic(MeasurementABC):
             'vs': np.array(voltage_step),
             'h': np.array(hysteresis)
         }
+        MeasurementABC.__init__(self, self._settings)
 
-    def run(self, device: DeviceABC, data_stream: Queue) -> np.ndarray:
+    def run(self, device: DeviceABC, data_stream: mp.Queue = None) -> np.ndarray:
         """Performs the measurement by iterating over the voltage range and returns the results as structured array.
         If a `data_stream` queue is provided, the results will also be sent there.
 
@@ -47,6 +49,8 @@ class CurrentVoltageCharacteristic(MeasurementABC):
             plotting of the measurement.
         :returns: A Numpy structured array with tuples of datapoints: ('Voltage (V)', 'Current (A)').
         """
+        if data_stream is None:
+            data_stream = FakeQueue()
         results = []
         set_voltage = self.__start_voltage
         inverse = 1 if self.__start_voltage > self.__end_voltage else 0
