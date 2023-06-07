@@ -28,21 +28,14 @@ class Experiment(ExperimentABC):
         :raises CompatibilityError: If the provided components (device, measurement and interface) are not compatible
             with each other.
         """
-        self.__state = mp.Value('i', ExperimentState.INITIAL.value)
-        self._database = database
-        self._device = device
-        self._measurement = measurement
-        self._interface = interface
-        self._sample_id = sample_id
+        state = mp.Value('i', ExperimentState.INITIAL.value)
         if selected_pixels is None:
             selected_pixels = interface.pixels
-        self._selected_pixels = selected_pixels
         if data_stream is None:
             data_stream = FakeQueue()
-        self._data_stream = data_stream
+        ExperimentABC.__init__(self, state, database, device, measurement, interface, sample_id, selected_pixels,
+                               data_stream)
         self._check_compatibility()
-        ExperimentABC.__init__(self, self.__state, self._database, self._device, self._measurement, self._interface,
-                               self._sample_id, self._selected_pixels, self._data_stream)
 
     def _check_compatibility(self):
         if self.interface.interface_type is not self.measurement.interface_type:
@@ -57,7 +50,7 @@ class Experiment(ExperimentABC):
                         for parent_class in self.measurement.required_channels[i]]):
                 raise CompatibilityError(f"The measurement requires one of these channels on index {i}: "
                                          f"{self.measurement.required_channels[i]} but on the device the channel on "
-                                         f"index {i} is a {self.device.channels[i].__name__}.")
+                                         f"index {i} is a {self.device.channels[i].__class__.__name__}.")
         for pixel in self.selected_pixels:
             if pixel not in self.interface.pixels:
                 raise CompatibilityError(f"The selected pixel {pixel} is not available on the interface!")
