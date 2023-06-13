@@ -52,7 +52,7 @@ class ExperimentABC(ABC):
 
     @property
     def _state(self) -> mp.Value:
-        return self.__state.value
+        return self.__state
 
     @_state.setter
     def _state(self, new_value: ExperimentState):
@@ -146,24 +146,30 @@ class InterfaceABC(ABC):
     """Implements the properties of the interface and a method which establishes a connection to the available pixels.
     A method for generating a dictionary which holds the corresponding sample layout must be implemented as well."""
 
-    _interface_type = None
-    _pixels = None
-    _sample_layout = None
+    _interface_type = NotImplemented
+    _pixels = NotImplemented
+    _sample_layout = NotImplemented
 
     @property
     def interface_type(self) -> InterfaceType:
         """Constant interface type object which has a descriptive string representation."""
+        if self._interface_type is NotImplemented:
+            raise NotImplementedError
         return self._interface_type
 
     @property
     def pixels(self) -> List[str]:
         """List of available pixels."""
+        if self._pixels is NotImplemented:
+            raise NotImplementedError
         return self._pixels
 
     @property
     def sample_layout(self) -> Dict[str, np.ndarray]:
         """A dictionary which contains the pixel ids as string values and their location on the sample as Numpy
         arrays."""
+        if self._sample_layout is NotImplemented:
+            raise NotImplementedError
         return self._sample_layout
 
     @abstractmethod
@@ -176,27 +182,35 @@ class MeasurementABC(ABC):
     """The implementation of a child class should hold the properties which are needed for correct database integration
     and interface/device compatibility. A method for running the measurement procedure must be implemented as well."""
 
-    _name = None
-    _interface_type = None
-    _required_channels = None
+    _name = NotImplemented
+    _interface_type = NotImplemented
+    _required_channels = NotImplemented
 
     def __init__(self, settings: Dict[str, np.ndarray]):
+        if len(settings) == 0:
+            settings = {'default': np.array([0])}
         self._settings = settings
 
     @property
     def name(self) -> str:
         """Name of the measurement procedure for how it will appear in the database."""
+        if self._name is NotImplemented:
+            raise NotImplementedError
         return self._name
 
     @property
     def interface_type(self) -> InterfaceType:
         """Constant interface type object which has a descriptive string representation."""
+        if self._interface_type is NotImplemented:
+            raise NotImplementedError
         return self._interface_type
 
     @property
     def required_channels(self) -> List[Tuple]:
         """A list of required channels given as tuple of possible channel classes which will be checked against the
         `channels` list of the ``Device``."""
+        if self._required_channels is NotImplemented:
+            raise NotImplementedError
         return self._required_channels
 
     @property

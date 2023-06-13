@@ -1,4 +1,5 @@
 import contextlib
+import numpy as np
 from queue import Queue
 from typing import Tuple
 from cohesivm import experiment, database, InterfaceType
@@ -69,6 +70,7 @@ class DemoMeasurement2(DemoMeasurement):
 class DemoInterface(InterfaceABC):
     _interface_type = InterfaceType.Demo1
     _pixels = ['0']
+    _sample_layout = {'0': np.array([0, 0])}
 
     def select_pixel(self, pixel: str):
         pass
@@ -97,3 +99,19 @@ def test_compatibility_error(db, interface, device, measurement, pixels):
             sample_id='Test',
             selected_pixels=pixels
         )
+
+
+class TestExperiment:
+
+    def __init__(self, db):
+        self.demo_experiment = experiment.Experiment(
+            database=db,
+            device=DemoDevice(),
+            measurement=DemoMeasurement(),
+            interface=DemoInterface(),
+            sample_id='Test',
+            selected_pixels=['0']
+        )
+
+    def test_setup(self):
+        self.demo_experiment.setup()
