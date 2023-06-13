@@ -1,9 +1,10 @@
 """Module containing the channel abstract base classes which provide the templates of methods to implement."""
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from typing import Tuple
+from .abcs import ChannelABC
 
 
-class SourceMeasureUnitChannel(ABC):
+class SourceMeasureUnitChannel(ChannelABC):
     """Combines the functions of a current source and a voltage measurement device."""
 
     @abstractmethod
@@ -36,7 +37,7 @@ class SourceMeasureUnitChannel(ABC):
         """
 
 
-class VoltmeterChannel(ABC):
+class VoltmeterChannel(ChannelABC):
     """Measures the electric potential difference between two points in a circuit."""
 
     @abstractmethod

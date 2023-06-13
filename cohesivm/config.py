@@ -1,8 +1,13 @@
 import configparser
+from typing import Dict, Any
 
-__config = configparser.ConfigParser()
-__config.read('config.ini')
+_config = configparser.ConfigParser()
+_config.read('config.ini')
 
 
-def get(section: str, option: str):
-    return __config.get(section, option)
+def get_section(section: str) -> Dict[str, Any]:
+    return _config._sections[section]
+
+
+def get_option(section: str, option: str) -> Any:
+    return _config.get(section, option)

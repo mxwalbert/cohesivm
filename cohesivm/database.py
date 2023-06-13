@@ -56,9 +56,9 @@ class Metadata:
 
     @settings.setter
     def settings(self, new_value: Dict[str, np.ndarray] | Dict[str, Iterable]):
-        self.__check_database_dict(new_value)
+        self._check_database_dict(new_value)
         self._settings = new_value
-        self.__parse_settings_string()
+        self._parse_settings_string()
 
     @property
     def sample_id(self) -> str:
@@ -78,7 +78,7 @@ class Metadata:
 
     @sample_layout.setter
     def sample_layout(self, new_value: Dict[str, np.ndarray] | Dict[str, Iterable]):
-        self.__check_database_dict(new_value)
+        self._check_database_dict(new_value)
         self._sample_layout = new_value
 
     @property
@@ -92,7 +92,7 @@ class Metadata:
         self._timestamp = np.array([new_value.isoformat()]).astype('S')
 
     @staticmethod
-    def __check_database_dict(database_dict):
+    def _check_database_dict(database_dict):
         for k in database_dict.keys():
             if type(k) != str:
                 raise TypeError(f'Type of key {k} must be string!')
@@ -107,7 +107,7 @@ class Metadata:
                 raise ValueError(f"Numpy array must be one-dimensional! "
                                  f"Shape of '{k}':{database_dict[k]} is {database_dict[k].shape}.")
 
-    def __parse_settings_string(self):
+    def _parse_settings_string(self):
         self.settings_string = self.parse_settings_string(self._settings)
 
     @staticmethod

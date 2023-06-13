@@ -3,11 +3,10 @@ import numpy as np
 from typing import Tuple
 from cohesivm.abcs import DeviceABC
 from cohesivm.channels import SourceMeasureUnitChannel
-from cohesivm.data_stream import FakeQueue
 from cohesivm.measurements.iv import CurrentVoltageCharacteristic
 
 
-class TestSourceMeasureUnitChannel(SourceMeasureUnitChannel):
+class DemoSourceMeasureUnitChannel(SourceMeasureUnitChannel):
 
     def measure_voltage(self) -> float:
         pass
@@ -22,10 +21,10 @@ class TestSourceMeasureUnitChannel(SourceMeasureUnitChannel):
         return voltage, 0.5*voltage
 
 
-class TestDevice(DeviceABC):
+class DemoDevice(DeviceABC):
 
     def __init__(self):
-        DeviceABC.__init__(self, [TestSourceMeasureUnitChannel()], {})
+        DeviceABC.__init__(self, [DemoSourceMeasureUnitChannel()], {})
 
     @contextlib.contextmanager
     def connect(self):
@@ -41,6 +40,6 @@ def test_iv():
     test_input = np.arange(start_voltage, end_voltage+voltage_step, voltage_step)
     test_output = np.array([(i, 0.5*i) for i in test_input], dtype=[('Voltage (V)', float), ('Current (A)', float)])
     measurement = CurrentVoltageCharacteristic(start_voltage, end_voltage, voltage_step)
-    result = measurement.run(TestDevice())
+    result = measurement.run(DemoDevice())
     assert np.allclose(result['Voltage (V)'], test_output['Voltage (V)'])
     assert np.allclose(result['Current (A)'], test_output['Current (A)'])

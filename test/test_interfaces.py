@@ -9,7 +9,7 @@ interface_types_to_be_tested = [
 
 interfaces_to_be_tested = [
     interfaces.TrivialHILO(),
-    interfaces.MA8X8(config.get('MA8X8', 'com_port'))
+    interfaces.MA8X8(config.get_option('MA8X8', 'com_port'))
 ]
 
 

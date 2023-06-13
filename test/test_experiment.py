@@ -15,7 +15,7 @@ def db():
     os.remove(db.path)
 
 
-class TestSourceMeasureUnitChannel(SourceMeasureUnitChannel):
+class DemoSourceMeasureUnitChannel(SourceMeasureUnitChannel):
 
     def measure_voltage(self) -> float:
         pass
@@ -27,12 +27,12 @@ class TestSourceMeasureUnitChannel(SourceMeasureUnitChannel):
         pass
 
     def source_and_measure(self, voltage: float) -> Tuple[float, float]:
-        return voltage, 0.5 * voltage
+        pass
 
 
-class TestDevice(DeviceABC):
+class DemoDevice(DeviceABC):
     def __init__(self):
-        DeviceABC.__init__(self, [TestSourceMeasureUnitChannel()], {})
+        DeviceABC.__init__(self, [DemoSourceMeasureUnitChannel()], {})
 
     @contextlib.contextmanager
     def connect(self):
@@ -41,15 +41,15 @@ class TestDevice(DeviceABC):
         print('disconnected')
 
 
-class TestDevice2(TestDevice):
+class DemoDevice2(DemoDevice):
     def __init__(self):
-        TestDevice.__init__(self)
+        DemoDevice.__init__(self)
         self._channels = []
 
 
-class TestMeasurement(MeasurementABC):
-    _name = 'test'
-    _interface_type = InterfaceType.Test1
+class DemoMeasurement(MeasurementABC):
+    _name = 'demo'
+    _interface_type = InterfaceType.Demo1
     _required_channels = [(SourceMeasureUnitChannel, VoltmeterChannel)]
 
     def __init__(self):
@@ -59,30 +59,30 @@ class TestMeasurement(MeasurementABC):
         pass
 
 
-class TestMeasurement2(TestMeasurement):
+class DemoMeasurement2(DemoMeasurement):
     _required_channels = [(VoltmeterChannel,)]
 
     def __init__(self):
-        TestMeasurement.__init__(self)
+        DemoMeasurement.__init__(self)
 
 
-class TestInterface(InterfaceABC):
-    _interface_type = InterfaceType.Test1
+class DemoInterface(InterfaceABC):
+    _interface_type = InterfaceType.Demo1
     _pixels = ['0']
 
     def select_pixel(self, pixel: str):
         pass
 
 
-class TestInterface2(TestInterface):
-    _interface_type = InterfaceType.Test2
+class DemoInterface2(DemoInterface):
+    _interface_type = InterfaceType.Demo2
 
 
 cases_compatibility_error = [
-    (TestInterface2(), TestDevice(), TestMeasurement(), ['0']),
-    (TestInterface(), TestDevice2(), TestMeasurement(), ['0']),
-    (TestInterface(), TestDevice(), TestMeasurement2(), ['0']),
-    (TestInterface(), TestDevice(), TestMeasurement(), ['0', '1'])
+    (DemoInterface2(), DemoDevice(), DemoMeasurement(), ['0']),
+    (DemoInterface(), DemoDevice2(), DemoMeasurement(), ['0']),
+    (DemoInterface(), DemoDevice(), DemoMeasurement2(), ['0']),
+    (DemoInterface(), DemoDevice(), DemoMeasurement(), ['0', '1'])
 ]
 
 

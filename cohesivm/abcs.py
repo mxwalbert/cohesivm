@@ -31,7 +31,8 @@ class ExperimentABC(ABC):
     """Main class which packages all parts that must be defined for running an experiment using the Statemachine design
     pattern. A child class should implement a compatibility check, the data management and worker handling."""
 
-    def __init__(self, state, database, device, measurement, interface, sample_id, selected_pixels, data_stream):
+    def __init__(self, state: mp.Value, database: Database, device: 'DeviceABC', measurement: 'MeasurementABC',
+                 interface: 'InterfaceABC', sample_id: str, selected_pixels: List[str], data_stream: Queue):
         self.__state = state
         self._database = database
         self._device = device
@@ -179,7 +180,7 @@ class MeasurementABC(ABC):
     _interface_type = None
     _required_channels = None
 
-    def __init__(self, settings):
+    def __init__(self, settings: Dict[str, np.ndarray]):
         self._settings = settings
 
     @property
@@ -211,15 +212,19 @@ class MeasurementABC(ABC):
         pass
 
 
+class ChannelABC(ABC):
+    """Contains the abstract methods for each kind of device channel."""
+
+
 class DeviceABC(ABC):
     """Implements the connection and the channels of a measurement device."""
 
-    def __init__(self, channels, connection_args):
+    def __init__(self, channels: List[Any], connection_args: Dict[str, Any]):
         self._channels = channels
         self._connection_args = connection_args
 
     @property
-    def channels(self) -> List[Any]:
+    def channels(self) -> List['ChannelABC']:
         """A list of ``Channel`` instances."""
         return self._channels
 

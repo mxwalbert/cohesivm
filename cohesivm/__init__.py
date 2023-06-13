@@ -6,12 +6,12 @@ units = pint.UnitRegistry()
 class InterfaceType:
     """Contains types of interfaces as constants which are assigned to an Interface class. Each interface type is
     implemented as private class which implements the __str__ method."""
-    class _Test:
+    class _Demo:
         def __str__(self):
             return 'For testing purposes.'
 
-    Test1 = _Test()
-    Test2 = _Test()
+    Demo1 = _Demo()
+    Demo2 = _Demo()
 
     class _HiLo:
         def __str__(self):

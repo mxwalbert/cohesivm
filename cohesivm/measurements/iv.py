@@ -32,13 +32,13 @@ class CurrentVoltageCharacteristic(MeasurementABC):
         self.__end_voltage = end_voltage
         self.__voltage_step = voltage_step
         self.__hysteresis = hysteresis
-        self._settings = {
+        settings = {
             'sv': np.array(start_voltage),
             'ev': np.array(end_voltage),
             'vs': np.array(voltage_step),
             'h': np.array(hysteresis)
         }
-        MeasurementABC.__init__(self, self._settings)
+        MeasurementABC.__init__(self, settings)
 
     def run(self, device: DeviceABC, data_stream: mp.Queue = None) -> np.ndarray:
         """Performs the measurement by iterating over the voltage range and returns the results as structured array.

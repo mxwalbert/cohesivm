@@ -12,7 +12,7 @@ cases_metadata_exceptions = [
 ]
 
 
-@pytest.mark.parametrize("settings,sample_layout,expected", cases_metadata_exceptions)
+@pytest.mark.parametrize("settings, sample_layout, expected", cases_metadata_exceptions)
 def test_metadata_exceptions(settings, sample_layout, expected):
     with pytest.raises(expected):
         database.Metadata('Test', settings, 'test_sample', sample_layout)
