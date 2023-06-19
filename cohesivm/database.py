@@ -179,7 +179,8 @@ class Database:
             in the database alongside the data.
         :returns: Stem of the dataset path in the database.
         """
-        stem = f'/{m.measurement}/{m.settings_string}/{self.timestamp}-{m.sample_id}'
+        timestamp = self.timestamp
+        stem = f'/{m.measurement}/{m.settings_string}/{timestamp}-{m.sample_id}'
         with h5py.File(self.path, "a") as db:
             if m.measurement not in db.keys():
                 db.create_group(m.measurement)
@@ -193,7 +194,7 @@ class Database:
             data_group.attrs.create('datetime', m.timestamp)
             if m.sample_id not in db['SAMPLES'].keys():
                 db['SAMPLES'].create_group(m.sample_id)
-            db['SAMPLES'][m.sample_id][self.timestamp] = h5py.SoftLink(stem)
+            db['SAMPLES'][m.sample_id][timestamp] = h5py.SoftLink(stem)
         return stem
 
     def save(self, data: np.ndarray, stem: str, pixel: str = 0):

@@ -3,10 +3,12 @@ import numpy as np
 from queue import Queue
 from typing import Tuple
 from cohesivm import experiment, database, InterfaceType
-from cohesivm.abcs import CompatibilityError, DeviceABC, MeasurementABC, InterfaceABC
+from cohesivm.abcs import CompatibilityError, DeviceABC, MeasurementABC, InterfaceABC, StateError, ExperimentState
 import pytest
 import os
 from cohesivm.channels import SourceMeasureUnitChannel, VoltmeterChannel
+from cohesivm.database import Metadata
+import time
 
 
 @pytest.fixture
@@ -57,7 +59,7 @@ class DemoMeasurement(MeasurementABC):
         MeasurementABC.__init__(self, {})
 
     def run(self, device: DeviceABC, data_stream: Queue):
-        pass
+        return np.array([0])
 
 
 class DemoMeasurement2(DemoMeasurement):
@@ -65,6 +67,16 @@ class DemoMeasurement2(DemoMeasurement):
 
     def __init__(self):
         DemoMeasurement.__init__(self)
+
+
+class DemoMeasurement3(DemoMeasurement):
+
+    def __init__(self):
+        DemoMeasurement.__init__(self)
+
+    def run(self, device: DeviceABC, data_stream: Queue):
+        while True:
+            pass
 
 
 class DemoInterface(InterfaceABC):
@@ -101,17 +113,71 @@ def test_compatibility_error(db, interface, device, measurement, pixels):
         )
 
 
-class TestExperiment:
+@pytest.fixture
+def demo_experiment(db):
+    return experiment.Experiment(
+        database=db,
+        device=DemoDevice(),
+        measurement=DemoMeasurement(),
+        interface=DemoInterface(),
+        sample_id='Test',
+        selected_pixels=['0']
+    )
 
-    def __init__(self, db):
-        self.demo_experiment = experiment.Experiment(
-            database=db,
-            device=DemoDevice(),
-            measurement=DemoMeasurement(),
-            interface=DemoInterface(),
-            sample_id='Test',
-            selected_pixels=['0']
+
+@pytest.fixture
+def demo_experiment2(db):
+    return experiment.Experiment(
+        database=db,
+        device=DemoDevice(),
+        measurement=DemoMeasurement3(),
+        interface=DemoInterface(),
+        sample_id='Test',
+        selected_pixels=['0']
+    )
+
+
+class TestExperiment:
+    cases_state_error = [
+        ExperimentState.READY,
+        ExperimentState.RUNNING,
+        ExperimentState.FINISHED,
+        ExperimentState.ABORTED
+    ]
+
+    @pytest.mark.parametrize("state", cases_state_error)
+    def test_setup(self, db, demo_experiment, state):
+        metadata = Metadata(
+            measurement=demo_experiment.measurement.name,
+            settings=demo_experiment.measurement.settings,
+            sample_id=demo_experiment.sample_id,
+            sample_layout=demo_experiment.interface.sample_layout,
         )
 
-    def test_setup(self):
-        self.demo_experiment.setup()
+        with pytest.raises(StateError):
+            demo_experiment._state = state
+            demo_experiment.setup()
+
+        demo_experiment._state = ExperimentState.INITIAL
+        demo_experiment.setup()
+        assert demo_experiment.dataset == f'/{demo_experiment.measurement.name}/{metadata.settings_string}/{db._timestamp}-{demo_experiment.sample_id}'
+        assert demo_experiment.state == ExperimentState.READY
+
+    def test_start_and_execute(self, demo_experiment):
+        with pytest.raises(StateError):
+            demo_experiment.start()
+
+        demo_experiment.setup()
+        demo_experiment.start()
+        try:
+            demo_experiment.process.join()
+        except AssertionError:
+            pass
+        assert demo_experiment.state == ExperimentState.FINISHED
+
+    def test_abort(self, demo_experiment2):
+        demo_experiment2.setup()
+        demo_experiment2.start()
+        time.sleep(1)
+        demo_experiment2.abort()
+        assert demo_experiment2.state == ExperimentState.ABORTED

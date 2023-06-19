@@ -89,6 +89,7 @@ class Experiment(ExperimentABC):
         self._state = ExperimentState.RUNNING
 
         self._process = mp.Process(target=self._execute)
+        self._process.start()
 
     def _execute(self):
         state_messages = {
