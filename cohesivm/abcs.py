@@ -4,8 +4,9 @@ from __future__ import annotations
 import multiprocessing as mp
 from enum import Enum
 from abc import ABC, abstractmethod
-from queue import Queue
 from typing import List, Dict, Any, Tuple
+
+import matplotlib.pyplot
 import numpy as np
 from . import InterfaceType
 from .database import Database
@@ -32,7 +33,7 @@ class ExperimentABC(ABC):
     pattern. A child class should implement a compatibility check, the data management and worker handling."""
 
     def __init__(self, state: mp.Value, database: Database, device: 'DeviceABC', measurement: 'MeasurementABC',
-                 interface: 'InterfaceABC', sample_id: str, selected_pixels: List[str], data_stream: Queue):
+                 interface: 'InterfaceABC', sample_id: str, selected_pixels: List[str], data_stream: mp.Queue):
         self.__state = state
         self._database = database
         self._device = device
@@ -96,10 +97,14 @@ class ExperimentABC(ABC):
         return None if self._current_pixel_idx is None else self._current_pixel_idx.value
 
     @property
-    def data_stream(self) -> Queue:
+    def data_stream(self) -> mp.Queue:
         """A queue-like object where the measurement results can be sent to, e.g., for real-time plotting of the
         measurement."""
         return self._data_stream
+
+    @data_stream.setter
+    def data_stream(self, new_value: mp.Queue):
+        self._data_stream = new_value
 
     @property
     def dataset(self) -> str:
@@ -220,7 +225,7 @@ class MeasurementABC(ABC):
         return self._settings
 
     @abstractmethod
-    def run(self, device: 'DeviceABC', data_stream: Queue):
+    def run(self, device: 'DeviceABC', data_stream: mp.Queue):
         """Actual implementation of the measurement procedure which returns the measurement results and optionally sends
         them to the ``data_stream``."""
         pass
@@ -251,4 +256,28 @@ class DeviceABC(ABC):
     def connect(self):
         """This method must be implemented as a context manager which stores the resource in the property
         `__connection`."""
+        pass
+
+
+class PlotABC(ABC):
+    def __init__(self):
+        self._data_stream = mp.Queue()
+        self._figure = None
+
+    @property
+    def data_stream(self) -> mp.Queue:
+        return self._data_stream
+
+    @property
+    def figure(self) -> matplotlib.pyplot.Figure | None:
+        return self._figure
+
+    @abstractmethod
+    def make_plot(self):
+        """Generates the canvas of the plot and populates the static elements."""
+        pass
+
+    @abstractmethod
+    def update_plot(self):
+        """Fetches the data from the `data_stream` and puts it in the figure."""
         pass

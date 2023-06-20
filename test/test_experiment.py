@@ -6,6 +6,7 @@ from cohesivm import experiment, database, InterfaceType
 from cohesivm.abcs import CompatibilityError, DeviceABC, MeasurementABC, InterfaceABC, StateError, ExperimentState
 import pytest
 import os
+import time
 from cohesivm.channels import SourceMeasureUnitChannel, VoltmeterChannel
 from cohesivm.database import Metadata
 import time
@@ -85,7 +86,13 @@ class DemoInterface(InterfaceABC):
     _sample_layout = {'0': np.array([0, 0])}
 
     def select_pixel(self, pixel: str):
-        pass
+        results = []
+        for i in range(10):
+            result = (i, i*i)
+            data_stream.put(result)
+            results.append(result)
+            time.sleep(1)
+        return np.array(results)
 
 
 class DemoInterface2(DemoInterface):

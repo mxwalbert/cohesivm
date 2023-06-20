@@ -72,6 +72,8 @@ class Experiment(ExperimentABC):
             sample_layout=self.interface.sample_layout,
         )
 
+        self._current_pixel_idx = mp.Value('i', -1)
+
         self._dataset = self.database.initialize_dataset(metadata)
 
         self._state = ExperimentState.READY
@@ -89,7 +91,7 @@ class Experiment(ExperimentABC):
         self._state = ExperimentState.RUNNING
 
         self._process = mp.Process(target=self._execute)
-        self._process.start()
+        self.process.start()
 
     def _execute(self):
         state_messages = {
@@ -101,15 +103,13 @@ class Experiment(ExperimentABC):
         if self.state is not ExperimentState.RUNNING:
             raise StateError(f"{state_messages[self.state]} Current state: {self.state}.")
 
-        self._current_pixel_idx = mp.Value('i', -1)
-
         for pixel in self.selected_pixels:
             self._current_pixel_idx.value = self.current_pixel_idx + 1
             self.interface.select_pixel(pixel)
             data = self.measurement.run(self.device, self.data_stream)
             self.database.save(data, self.dataset, pixel)
 
-        self._current_pixel_idx = None
+        self._current_pixel_idx.value = self.current_pixel_idx + 1
 
         self._state = ExperimentState.FINISHED
 
@@ -122,8 +122,6 @@ class Experiment(ExperimentABC):
         }
         if self.state is not ExperimentState.RUNNING:
             raise StateError(f"{state_messages[self.state]} Current state: {self.state}.")
-
-        self._current_pixel_idx = None
 
         self._state = ExperimentState.ABORTED
 

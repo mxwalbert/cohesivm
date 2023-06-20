@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import contextlib
 import pytest
+import numpy as np
 from decimal import Decimal
 from typing import List, Tuple
 from cohesivm import config
@@ -114,10 +115,14 @@ class DemoOssilaX200SMUChannel(OssilaX200SMUChannel):
         self.range = 1
         self.voltage = Decimal(0)
         self._connection = {self.identifier: DemoOssilaX200SMUChannel.Connection()}
+        self._connection[self.identifier].set.enabled = self.set_enabled
         self._connection[self.identifier].set.range = self.set_range
         self._connection[self.identifier].set.voltage = self.set_voltage
         self._connection[self.identifier].measurei = self.measurei
         self._connection[self.identifier].oneshot = self.oneshot
+
+    def set_enabled(self, value: bool, response):
+        pass
 
     def set_range(self, value: int, response):
         self.range = value
@@ -138,9 +143,7 @@ class DemoOssilaX200(OssilaX200):
 
     @contextlib.contextmanager
     def connect(self):
-        print('connected')
         yield
-        print('disconnected')
 
 
 def test_smu_auto_range():
@@ -172,7 +175,7 @@ class TestOssilaDeviceAndChannels:
 
     def test_initialization(self):
         with self.device.connect():
-            assert self.device.channels[0]._get_property('delay') == self.device.channels[0].settings['delay']
+            assert Decimal(self.device.channels[0]._get_property('delay')) == self.device.channels[0].settings['delay']
             assert self.device.channels[0]._get_property('filter') == self.device.channels[0].settings['filter']
             assert self.device.channels[0]._get_property('osr') == self.device.channels[0].settings['osr']
             assert self.device.channels[0]._get_property('range') == self.device.channels[0].settings['range']
@@ -180,7 +183,7 @@ class TestOssilaDeviceAndChannels:
 
     def test_change_setting(self):
         with self.device.connect():
-            new_delay = 2000
+            new_delay = Decimal(2000)
             self.device.channels[0].change_setting('delay', new_delay)
             assert self.device.channels[0]._get_property('delay') == new_delay
             new_osr = 4
@@ -189,11 +192,13 @@ class TestOssilaDeviceAndChannels:
 
     def test_smu_measure_voltage(self):
         with self.device.connect():
-            assert type(self.device.channels[0].measure_voltage()) == float
+            result = self.device.channels[0].measure_voltage()
+            assert isinstance(result, float)
 
     def test_smu_measure_current(self):
         with self.device.connect():
-            assert type(self.device.channels[0].measure_current()) == float
+            result = self.device.channels[0].measure_current()
+            assert isinstance(result, float)
 
     def test_smu_source_voltage(self):
         with self.device.connect():
@@ -205,9 +210,10 @@ class TestOssilaDeviceAndChannels:
     def test_smu_source_and_measure(self):
         with self.device.connect():
             result = self.device.channels[0].source_and_measure(0.)
-            assert type(result) == tuple
+            assert type(result) == np.ndarray
             assert len(result) == 2
 
     def test_vsense_measure_voltage(self):
         with self.device.connect():
-            assert type(self.device.channels[1].measure_voltage()) == float
+            result = self.device.channels[1].measure_voltage()
+            assert isinstance(result, float)

@@ -9,10 +9,17 @@ except ImportError:
 import xtralien
 import contextlib
 import time
+from enum import Enum
 from decimal import Decimal
-from typing import Tuple, List, Any, Dict
+import numpy as np
+from typing import List, Any, Dict
 from ..abcs import DeviceABC
 from ..channels import SourceMeasureUnitChannel, VoltmeterChannel
+
+
+class OssilaX200ChannelState(Enum):
+    DISABLED = 1
+    ENABLED = 2
 
 
 class OssilaX200Channel:
@@ -22,6 +29,7 @@ class OssilaX200Channel:
         self._identifier = identifier
         self._settings = settings
         self._connection = None
+        self._state = OssilaX200ChannelState.DISABLED
 
     @property
     def identifier(self) -> str:
@@ -50,13 +58,16 @@ class OssilaX200Channel:
     def _get_property(self, name: str) -> Any:
         if self._connection is None:
             raise RuntimeError('A device connection must be established in order to communicate with the channel!')
+        if self._state is OssilaX200ChannelState.ENABLED:
+            self.disable()
         method = getattr(self._connection[self.identifier].get, name)
         return method()
 
     def _check_settings(self):
         raise NotImplementedError
 
-    def _apply_settings(self):
+    def apply_settings(self):
+        """Checks and applies the settings."""
         self._check_settings()
         for name, value in self._settings.items():
             self._set_property(name, value)
@@ -72,16 +83,21 @@ class OssilaX200Channel:
         if setting not in self._settings.keys():
             raise KeyError(f"'{setting}' is not a valid setting identifier string.")
         self._settings[setting] = value
-        self._apply_settings()
+        self.apply_settings()
 
     def enable(self):
-        """Applies the settings and enables the channel."""
-        self._apply_settings()
-        self._set_property('enable', True)
+        """Enables the channel."""
+        if self._state is OssilaX200ChannelState.ENABLED:
+            return
+        self._set_property('enabled', True)
+        self._state = OssilaX200ChannelState.ENABLED
 
     def disable(self):
         """Disables the channel."""
-        self._set_property('enable', False)
+        if self._state is OssilaX200ChannelState.DISABLED:
+            return
+        self._set_property('enabled', False)
+        self._state = OssilaX200ChannelState.DISABLED
 
 
 class OssilaX200SMUChannel(SourceMeasureUnitChannel, OssilaX200Channel):
@@ -146,12 +162,14 @@ class OssilaX200SMUChannel(SourceMeasureUnitChannel, OssilaX200Channel):
     def disable(self):
         """Sets the source voltage to 0 V and disables the channel."""
         self._set_property('voltage', Decimal(0))
-        self._set_property('enable', False)
+        OssilaX200Channel.disable(self)
 
     def measure_voltage(self):
+        self.enable()
         return self._connection[self.identifier].measurev()[0]
 
     def measure_current(self):
+        self.enable()
         return self._connection[self.identifier].measurei()[0]
 
     def source_voltage(self, voltage: float):
@@ -160,6 +178,7 @@ class OssilaX200SMUChannel(SourceMeasureUnitChannel, OssilaX200Channel):
         :param voltage: Output voltage of the power source in V. Must be in [-10, 10].
         :raises ValueError: If voltage is out of bounds.
         """
+        self.enable()
         if abs(voltage) > 10:
             raise ValueError('Absolute voltage must not exceed 10 V!')
         self._set_property('voltage', Decimal(voltage))
@@ -173,13 +192,14 @@ class OssilaX200SMUChannel(SourceMeasureUnitChannel, OssilaX200Channel):
             else:
                 break
 
-    def source_and_measure(self, voltage: float) -> Tuple[float, float]:
+    def source_and_measure(self, voltage: float) -> np.ndarray[float, float]:
         """Sets the output voltage to the defined value, then measures the actual voltage and current.
 
         :param voltage: Output voltage of the power source in V. Must be in [-10, 10].
         :returns: Measurement result as tuple: (voltage (V), current (A)).
         :raises ValueError: If voltage is out of bounds.
         """
+        self.enable()
         if abs(voltage) > 10:
             raise ValueError('Absolute voltage must not exceed 10 V!')
         if self._auto_range:
@@ -214,6 +234,7 @@ class OssilaX200VsenseChannel(VoltmeterChannel, OssilaX200Channel):
             raise ValueError('Setting `osr` must be in [0,19]!')
 
     def measure_voltage(self):
+        self.enable()
         return self._connection[self.identifier].measure()[0]
 
 
@@ -222,7 +243,7 @@ class OssilaX200(DeviceABC):
     device connection."""
 
     def __init__(self, channels: List[OssilaX200SMUChannel | OssilaX200VsenseChannel] = None,
-                 address: str = '', port: int = 8888, serial_timeout: float = 0.1):
+                 address: str = '', port: int = 0, serial_timeout: float = 0.1):
         """Initializes the Ossila X200 Source Measure Unit.
 
         :param channels: List of channels which are subclasses of the OssilaX200Channel class. A maximum of 4 channels,
@@ -274,7 +295,7 @@ class OssilaX200(DeviceABC):
         connection = xtralien.Device(**self._connection_args)
         for channel in self._channels:
             channel._connection = connection
-            channel.enable()
+            channel.apply_settings()
         try:
             yield
         finally:
