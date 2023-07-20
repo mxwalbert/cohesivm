@@ -1,5 +1,5 @@
-"""Implements the Ossila X200 Source Measure Unit which relies on the xtralien module:
-https://pypi.org/project/xtralien/"""
+"""Implements the Ossila X200 Source Measure Unit.
+Requires the xtralien module: https://pypi.org/project/xtralien/"""
 from __future__ import annotations
 import importlib
 try:
@@ -7,113 +7,59 @@ try:
 except ImportError:
     raise ImportError("Package 'xtralien' is not installed.")
 import xtralien
-import contextlib
 import time
-from enum import Enum
-from decimal import Decimal
 import numpy as np
-from typing import List, Any, Dict
-from ..abcs import DeviceABC
+from decimal import Decimal
+from typing import List, Any, Tuple
+from abc import abstractmethod
+from . import ChannelABC, DeviceABC, requires_connection
 from ..channels import SourceMeasureUnitChannel, VoltmeterChannel
+from ..database import database_dict_type
 
 
-class OssilaX200ChannelState(Enum):
-    DISABLED = 1
-    ENABLED = 2
-
-
-class OssilaX200Channel:
+class OssilaX200Channel(ChannelABC):
     """Implements the properties and methods which all Ossila X200 channels have in common."""
 
     def __init__(self, identifier, settings):
-        self._identifier = identifier
-        self._settings = settings
-        self._connection = None
-        self._state = OssilaX200ChannelState.DISABLED
+        ChannelABC.__init__(self, identifier, settings)
 
-    @property
-    def identifier(self) -> str:
-        """String identifier of the channel."""
-        return self._identifier
-
-    @property
-    def settings(self) -> Dict[str, Any]:
-        """Dictionary of channel settings which are keyed by the parameter name of the `__init__` method without the
-        leading 's_'."""
-        return self._settings
-
-    @property
-    def connection(self) -> xtralien.Device | None:
-        """Holds the device reference while a connection is established through using the `Device.connect`
-        contextmanager."""
-        return self._connection
-
-    def _set_property(self, name: str, value: Any):
-        if self._connection is None:
-            raise RuntimeError('A device connection must be established in order to communicate with the channel!')
-        method = getattr(self._connection[self.identifier].set, name)
+    @requires_connection
+    def set_property(self, name: str, value: Any):
+        method = getattr(self.connection[self.identifier].set, name)
         method(value, response=0)
         time.sleep(0.01)
 
-    def _get_property(self, name: str) -> Any:
-        if self._connection is None:
-            raise RuntimeError('A device connection must be established in order to communicate with the channel!')
-        if self._state is OssilaX200ChannelState.ENABLED:
-            self.disable()
-        method = getattr(self._connection[self.identifier].get, name)
-        return method()
+    @requires_connection
+    def get_property(self, name: str) -> Any:
+        method = getattr(self.connection[self.identifier].get, name)
+        result = method()
+        if type(result) == str:
+            result = result.replace('\x00', '')
+        return result
 
+    @abstractmethod
     def _check_settings(self):
-        raise NotImplementedError
-
-    def apply_settings(self):
-        """Checks and applies the settings."""
-        self._check_settings()
-        for name, value in self._settings.items():
-            self._set_property(name, value)
-
-    def change_setting(self, setting, value):
-        """Modifies the `__settings` property and overwrites the settings on the device.
-
-        :param setting: String key of the setting in the `__settings' property. This is the parameter name in the
-            __init__ method without the leading 's_', e.g., 'osr' for the parameter `s_osr`.
-        :param value: New value of the setting.
-        :raises KeyError: If `setting` is not a valid setting identifier string.
-        """
-        if setting not in self._settings.keys():
-            raise KeyError(f"'{setting}' is not a valid setting identifier string.")
-        self._settings[setting] = value
-        self.apply_settings()
+        pass
 
     def enable(self):
-        """Enables the channel."""
-        if self._state is OssilaX200ChannelState.ENABLED:
-            return
-        self._set_property('enabled', True)
-        self._state = OssilaX200ChannelState.ENABLED
+        self.set_property('enabled', True)
 
     def disable(self):
-        """Disables the channel."""
-        if self._state is OssilaX200ChannelState.DISABLED:
-            return
-        self._set_property('enabled', False)
-        self._state = OssilaX200ChannelState.DISABLED
+        self.set_property('enabled', False)
 
 
 class OssilaX200SMUChannel(SourceMeasureUnitChannel, OssilaX200Channel):
     """A source measure unit (SMU) channel of the Ossila X200 device which can source a voltage and measure the voltage
     and current. For more details and specifications see the user manual of the Ossila X200."""
 
-    current_ranges = (200e-3, 20e-3, 2e-3, 200e-6, 20e-6, 0.)
-
-    def __init__(self, identifier: str = 'smu1', auto_range: bool = False, s_delay: int = 1000, s_filter: int = 1,
+    def __init__(self, identifier: str = 'smu1', auto_range: bool = False, delay: float = 0.001, s_filter: int = 1,
                  s_osr: int = 5, s_range: int = 1):
-        """Initializes one of the two source measure unit (SMU) channels of the Ossila X200 device.
+        """Initializes one of the two source measure unit (SMU) channels of the Ossila X200.
 
         :param identifier: String identifier of the SMU channel: 'smu1' or 'smu2'.
-        :param auto_range: If the flag is set True, the `source_and_measure` method will automatically find the ideal
-            current range from the available ranges (see `s_range`).
-        :param s_delay: Setting for the voltage settling time in µs.
+        :param auto_range: Flags if the current measurement range should be determined automatically by the
+            `source_and_measure` method.
+        :param delay: Setting for the voltage settling time in s.
         :param s_filter: Setting for the number of repeated measurements which get averaged.
         :param s_osr: Setting for the sampling rate which is 64*2**n samples/datapoint with n in [0,9] or [10,19] for
             1x or 2x mode of the analog-to-digital converter. E.g., the default setting of 5 corresponds to a sampling
@@ -127,13 +73,12 @@ class OssilaX200SMUChannel(SourceMeasureUnitChannel, OssilaX200Channel):
             raise ValueError("Identifier of the SMU channel must be 'smu1' or 'smu2'!")
         self._identifier = identifier
         self._auto_range = auto_range
+        self._delay = delay
         self._settings = {
-            'delay': Decimal(s_delay),
             'filter': s_filter,
             'osr': s_osr,
             'range': s_range
         }
-        self._check_settings()
         OssilaX200Channel.__init__(self, self._identifier, self._settings)
 
     @property
@@ -142,14 +87,26 @@ class OssilaX200SMUChannel(SourceMeasureUnitChannel, OssilaX200Channel):
 
     @auto_range.setter
     def auto_range(self, new_value: bool):
-        """Enable or disable the use of the automatic current range selection."""
+        """If True, the `source_and_measure` method will automatically set the current measurement range."""
         self._auto_range = new_value
 
+    @property
+    def delay(self) -> float:
+        return self._delay
+
+    @delay.setter
+    def delay(self, new_value: float):
+        """Set the voltage settling time between applying the voltage and measuring the voltage-current pair."""
+        self._delay = new_value
+
+    @property
+    def settings(self) -> database_dict_type:
+        whole_settings_dict = {'auto_range': self.auto_range, 'delay': self.delay}
+        for k, v in self._settings.items():
+            whole_settings_dict[k] = v
+        return whole_settings_dict
+
     def _check_settings(self):
-        if type(self._settings['delay']) is not Decimal:
-            raise TypeError('Setting `delay` must be Decimal!')
-        if self._settings['delay'] < 0:
-            raise ValueError('Setting `delay` must not be negative!')
         if type(self._settings['filter']) is not int:
             raise TypeError('Setting `filter` must be int!')
         if self._settings['filter'] < 0:
@@ -159,52 +116,75 @@ class OssilaX200SMUChannel(SourceMeasureUnitChannel, OssilaX200Channel):
         if self._settings['range'] not in range(1, 6):
             raise ValueError('Setting `range` must be in [1,5]!')
 
+    def enable(self):
+        """Sets the source voltage to 0 V and enables the channel."""
+        self.set_property('voltage', Decimal('0'))
+        OssilaX200Channel.enable(self)
+
     def disable(self):
         """Sets the source voltage to 0 V and disables the channel."""
-        self._set_property('voltage', Decimal(0))
+        self.set_property('voltage', Decimal('0'))
         OssilaX200Channel.disable(self)
 
+    @requires_connection
     def measure_voltage(self):
-        self.enable()
-        return self._connection[self.identifier].measurev()[0]
+        return self.connection[self.identifier].measurev()[0]
 
+    @requires_connection
     def measure_current(self):
-        self.enable()
-        return self._connection[self.identifier].measurei()[0]
+        return self.connection[self.identifier].measurei()[0]
 
     def source_voltage(self, voltage: float):
-        """Sets the output voltage to the defined value.
+        """Sets the DC output voltage to the defined value.
 
-        :param voltage: Output voltage of the power source in V. Must be in [-10, 10].
+        :param voltage: Output voltage of the DC power source in V. Must be in [-10, 10].
         :raises ValueError: If voltage is out of bounds.
         """
-        self.enable()
         if abs(voltage) > 10:
             raise ValueError('Absolute voltage must not exceed 10 V!')
-        self._set_property('voltage', Decimal(voltage))
+        self.set_property('voltage', Decimal(str(voltage)))
 
-    def _find_range(self, voltage: float):
-        self._set_property('range', 1)
-        self.source_voltage(voltage)
-        for i in range(len(self.current_ranges)):
-            if abs(self.measure_current()) < self.current_ranges[i+1]:
-                self._set_property('range', i + 2)
-            else:
-                break
+    current_limits = (0.1, 0.01, 0.001, 0.0001, 0.00001, 0.)
 
-    def source_and_measure(self, voltage: float) -> np.ndarray[float, float]:
+    @requires_connection
+    def _find_range(self) -> np.ndarray[float, float]:
+        while True:
+            result = self.connection[self.identifier].measure()[0]
+            i = 0
+            for i in range(6):
+                if float(abs(result[1])) >= self.current_limits[i]:
+                    break
+            if i == 0:
+                return result
+            current_range = self.get_property('range')
+            if i > current_range:
+                if (i - current_range) > 2:
+                    i = int(current_range + 2)
+            elif i == current_range:
+                return result
+            self.set_property('range', i)
+
+    @requires_connection
+    def source_and_measure(self, voltage: float) -> Tuple[float, float]:
         """Sets the output voltage to the defined value, then measures the actual voltage and current.
 
         :param voltage: Output voltage of the power source in V. Must be in [-10, 10].
-        :returns: Measurement result as tuple: (voltage (V), current (A)).
+        :returns: Measurement result as a tuple: (voltage (V), current (A)).
         :raises ValueError: If voltage is out of bounds.
         """
-        self.enable()
         if abs(voltage) > 10:
             raise ValueError('Absolute voltage must not exceed 10 V!')
-        if self._auto_range:
-            self._find_range(voltage)
-        return self._connection[self.identifier].oneshot(Decimal(voltage))[0]
+        self.source_voltage(voltage)
+        if self.auto_range:
+            if self.get_property('error') == 'true':
+                self.set_property('range', 1)
+                self.source_voltage(voltage)
+            time.sleep(self.delay)
+            result = self._find_range()
+        else:
+            time.sleep(self.delay)
+            result = self.connection[self.identifier].measure()[0]
+        return result[0], result[1]
 
 
 class OssilaX200VsenseChannel(VoltmeterChannel, OssilaX200Channel):
@@ -212,7 +192,7 @@ class OssilaX200VsenseChannel(VoltmeterChannel, OssilaX200Channel):
     more details and specifications see the user manual of the Ossila X200."""
 
     def __init__(self, identifier: str = 'vsense1', s_osr: int = 5):
-        """Initializes one of the two voltmeter channels (Vsense) of the Ossila X200 device.
+        """Initializes one of the two voltmeter channels (Vsense) of the Ossila X200.
 
         :param identifier: String identifier of the SMU channel: 'vsense1' or 'vsense2'.
         :param s_osr: Setting for the sampling rate which is 64*2**n samples/datapoint with n in [0,9] or [10,19] for
@@ -226,21 +206,20 @@ class OssilaX200VsenseChannel(VoltmeterChannel, OssilaX200Channel):
         self._settings = {
             'osr': s_osr
         }
-        self._check_settings()
         OssilaX200Channel.__init__(self, self._identifier, self._settings)
 
     def _check_settings(self):
         if self._settings['osr'] not in range(20):
             raise ValueError('Setting `osr` must be in [0,19]!')
 
+    @requires_connection
     def measure_voltage(self):
-        self.enable()
-        return self._connection[self.identifier].measure()[0]
+        return self.connection[self.identifier].measure()[0]
 
 
 class OssilaX200(DeviceABC):
     """Implements the Ossila X200 Source Measure Unit as a Device class which is a container for the channels and the
-    device connection."""
+    device connection. For more details and specifications see the user manual of the Ossila X200."""
 
     def __init__(self, channels: List[OssilaX200SMUChannel | OssilaX200VsenseChannel] = None,
                  address: str = '', port: int = 0, serial_timeout: float = 0.1):
@@ -274,32 +253,16 @@ class OssilaX200(DeviceABC):
             serial_timeout = float(serial_timeout)
         except ValueError:
             raise TypeError('Connection argument `serial_timeout` must be float. Type casting failed.')
-        connection_args = {'addr': address, 'port': port, 'serial_timeout': serial_timeout}
-        DeviceABC.__init__(self, channels, connection_args)
+        self._connection_args = {'addr': address, 'port': port, 'serial_timeout': serial_timeout}
+        DeviceABC.__init__(self, channels)
 
     @property
     def channels(self) -> List[OssilaX200SMUChannel | OssilaX200VsenseChannel]:
         return self._channels
 
-    @contextlib.contextmanager
-    def connect(self):
-        """Establishes the connection to the device and enables its channels. Must be used in form of a resource such
-        that the channels are disabled and the connection is closed safely.
-
-        Usage example:
-
-        >>> device = OssilaX200(address='COM1')
-        >>> with device.connect():
-        >>>     # do something
-        """
-        connection = xtralien.Device(**self._connection_args)
-        for channel in self._channels:
-            channel._connection = connection
-            channel.apply_settings()
-        try:
-            yield
-        finally:
-            for channel in self._channels:
-                channel.disable()
-                channel._connection = None
-            connection.close()
+    def _establish_connection(self) -> xtralien.Device:
+        dev = xtralien.Device(**self._connection_args)
+        if len(dev.connections) == 0:
+            del dev
+            raise RuntimeError('There are no connected xtralien devices.')
+        return dev

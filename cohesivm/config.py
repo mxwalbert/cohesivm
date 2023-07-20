@@ -1,8 +1,12 @@
+import os
 import configparser
 from typing import Dict, Any
 
+path = 'config.ini'
+if not os.path.isfile(path):
+    path = f'../{path}'
 _config = configparser.ConfigParser()
-_config.read('config.ini')
+_config.read(path)
 
 
 def get_section(section: str) -> Dict[str, Any]:

@@ -1,22 +1,15 @@
 from __future__ import annotations
-
-import contextlib
 import pytest
 import numpy as np
 from decimal import Decimal
-from typing import List, Tuple
+from typing import List
 from cohesivm import config
-from cohesivm.channels import VoltmeterChannel
+from cohesivm.devices.agilent import Agilent4284ALCRChannel
 from cohesivm.devices.ossila import OssilaX200, OssilaX200SMUChannel, OssilaX200VsenseChannel
 
 
-class DemoVoltmeterChannel(VoltmeterChannel):
-    def measure_voltage(self) -> float:
-        pass
-
-
 smu1 = OssilaX200SMUChannel()
-smu2 = OssilaX200SMUChannel('smu2', auto_range=True)
+smu2 = OssilaX200SMUChannel('smu2')
 smu3 = OssilaX200SMUChannel()
 smu3._identifier = 'smu3'
 vsense1 = OssilaX200VsenseChannel()
@@ -26,20 +19,18 @@ vsense2 = OssilaX200VsenseChannel('vsense2')
 class TestConfiguration:
 
     cases_smu_channel_exceptions = [
-        ('test', 1000, 1, 5, 1, ValueError),
-        ('smu1', -1, 1, 5, 1, ValueError),
-        ('smu1', 1000, 1., 5, 1, TypeError),
-        ('smu1', 1000, -1, 5, 1, ValueError),
-        ('smu1', 1000, 1, 20, 1, ValueError),
-        ('smu1', 1000, 1, 5, 0, ValueError)
+        ('test', 1, 5, 1, ValueError),
+        ('smu1', 1., 5, 1, TypeError),
+        ('smu1', -1, 5, 1, ValueError),
+        ('smu1', 1, 20, 1, ValueError),
+        ('smu1', 1, 5, 0, ValueError)
     ]
 
-    @pytest.mark.parametrize("identifier, s_delay, s_filter, s_osr, s_range, expected", cases_smu_channel_exceptions)
-    def test_smu_channel_exceptions(self, identifier, s_delay, s_filter, s_osr, s_range, expected):
+    @pytest.mark.parametrize("identifier, s_filter, s_osr, s_range, expected", cases_smu_channel_exceptions)
+    def test_smu_channel_exceptions(self, identifier, s_filter, s_osr, s_range, expected):
         with pytest.raises(expected):
             OssilaX200SMUChannel(
                 identifier=identifier,
-                s_delay=s_delay,
                 s_filter=s_filter,
                 s_osr=s_osr,
                 s_range=s_range
@@ -66,7 +57,7 @@ class TestConfiguration:
         # too many channels
         ([smu1, smu2, vsense1, vsense2, smu3], ValueError),
         # not OssilaX200Channel
-        ([DemoVoltmeterChannel()], TypeError)
+        ([Agilent4284ALCRChannel()], TypeError)
     ]
 
     @pytest.mark.parametrize("channels, expected", cases_device_exceptions)
@@ -75,14 +66,14 @@ class TestConfiguration:
             OssilaX200(channels=channels)
 
     cases_change_setting_exceptions = [
-        # wrong type of delay
-        (smu1, 'delay', 1000, TypeError),
+        # wrong type of filter
+        (smu1, 'filter', 1., TypeError),
         # delay out of range
-        (smu1, 'delay', Decimal(-1), ValueError),
+        (smu1, 'filter', -1, ValueError),
         # setting not available on channel
-        (vsense1, 'delay', Decimal(1000), KeyError),
+        (vsense1, 'filter', 1, KeyError),
         # no device connection established
-        (smu1, 'delay', Decimal(1000), RuntimeError)
+        (smu1, 'filter', 1, RuntimeError)
     ]
 
     @pytest.mark.parametrize("channel, setting_key, setting_value, expected", cases_change_setting_exceptions)
@@ -91,79 +82,90 @@ class TestConfiguration:
             channel.change_setting(setting_key, setting_value)
 
 
-class DemoOssilaX200SMUChannel(OssilaX200SMUChannel):
-    # current_ranges = (200e-3, 20e-3, 2e-3, 200e-6, 20e-6, 0.)
-
-    voltage_current_pairs = {
-        Decimal(0.): 100e-3,
-        Decimal(1.): 10e-3,
-        Decimal(2.): 1e-3,
-        Decimal(3.): 100e-6,
-        Decimal(4.): 10e-6,
-        Decimal(5.): 1e-6
-    }
-
-    class Connection:
-
-        class Set:
-            pass
-
-        set = Set()
-
-    def __init__(self):
-        OssilaX200SMUChannel.__init__(self, auto_range=True)
-        self.range = 1
-        self.voltage = Decimal(0)
-        self._connection = {self.identifier: DemoOssilaX200SMUChannel.Connection()}
-        self._connection[self.identifier].set.enabled = self.set_enabled
-        self._connection[self.identifier].set.range = self.set_range
-        self._connection[self.identifier].set.voltage = self.set_voltage
-        self._connection[self.identifier].measurei = self.measurei
-        self._connection[self.identifier].oneshot = self.oneshot
-
-    def set_enabled(self, value: bool, response):
+class DemoConnection:
+    class Setter:
         pass
 
+    def __init__(self):
+        self.get = self
+        self.set = DemoConnection.Setter()
+        self._enabled = False
+        self.set.enabled = self.set_enabled
+        self._filter = 1
+        self.set.filter = self.set_filter
+        self._osr = 5
+        self.set.osr = self.set_osr
+        self._range = 1
+        self.set.range = self.set_range
+        self._voltage = 0.
+        self.set.voltage = self.set_voltage
+        self._resistance = 100
+        self.set.resistance = self.set_resistance
+        self.measure = self.measure
+
+    def enabled(self):
+        return self._enabled
+
+    def set_enabled(self, value: bool, response):
+        self._enabled = value
+
+    def filter(self):
+        return self._filter
+
+    def set_filter(self, value: int, response):
+        self._filter = value
+
+    def osr(self):
+        return self._osr
+
+    def set_osr(self, value: int, response):
+        self._osr = value
+
+    def range(self):
+        return self._range
+
     def set_range(self, value: int, response):
-        self.range = value
+        self._range = value
+
+    def voltage(self):
+        return self._voltage
 
     def set_voltage(self, value: Decimal, response):
-        self.voltage = value
+        self._voltage = float(value)
 
-    def measurei(self) -> List[float]:
-        return [self.voltage_current_pairs[self.voltage]]
+    def resistance(self):
+        return self._resistance
 
-    def oneshot(self, value: Decimal) -> List[Tuple[float, float]]:
-        return [(float(value), self.voltage_current_pairs[value])]
+    def set_resistance(self, value: float, response):
+        self._resistance = value
+
+    def measure(self) -> List[np.ndarray[float, float]]:
+        return [np.array([self._voltage, self._voltage / self._resistance])]
 
 
 class DemoOssilaX200(OssilaX200):
+
     def __init__(self, channels):
         OssilaX200.__init__(self, channels=channels)
 
-    @contextlib.contextmanager
-    def connect(self):
-        yield
-
-
-def test_smu_auto_range():
-    channel = DemoOssilaX200SMUChannel()
-    device = DemoOssilaX200([channel])
-    with device.connect():
-        for i in range(6):
-            assert device.channels[0].source_and_measure(float(i)) == \
-                   (float(Decimal(i)), channel.voltage_current_pairs[Decimal(i)])
-            if i < 5:
-                assert channel.range == i + 1
-            else:
-                assert channel.range == i
+    def _establish_connection(self) -> dict:
+        return {
+            'smu1': DemoConnection(),
+            'smu2': DemoConnection(),
+            'vsense1': DemoConnection(),
+            'vsense2': DemoConnection()
+        }
 
 
 @pytest.mark.incremental
 class TestOssilaDeviceAndChannels:
     """The tests within this class require a connected device."""
 
-    device = OssilaX200(channels=[smu1, vsense1], **config.get_section('OssilaX200'))
+    try:
+        connection_kwargs = config.get_section('OssilaX200')
+    except KeyError:
+        connection_kwargs = {}
+    device = OssilaX200(channels=[smu1, vsense1], **connection_kwargs)
 
     def test_connection(self):
         try:
@@ -175,20 +177,19 @@ class TestOssilaDeviceAndChannels:
 
     def test_initialization(self):
         with self.device.connect():
-            assert Decimal(self.device.channels[0]._get_property('delay')) == self.device.channels[0].settings['delay']
-            assert self.device.channels[0]._get_property('filter') == self.device.channels[0].settings['filter']
-            assert self.device.channels[0]._get_property('osr') == self.device.channels[0].settings['osr']
-            assert self.device.channels[0]._get_property('range') == self.device.channels[0].settings['range']
-            assert self.device.channels[1]._get_property('osr') == self.device.channels[1].settings['osr']
+            assert self.device.channels[0].get_property('filter') == self.device.channels[0].settings['filter']
+            assert self.device.channels[0].get_property('osr') == self.device.channels[0].settings['osr']
+            assert self.device.channels[0].get_property('range') == self.device.channels[0].settings['range']
+            assert self.device.channels[1].get_property('osr') == self.device.channels[1].settings['osr']
 
     def test_change_setting(self):
         with self.device.connect():
-            new_delay = Decimal(2000)
-            self.device.channels[0].change_setting('delay', new_delay)
-            assert self.device.channels[0]._get_property('delay') == new_delay
+            new_filter = 2
+            self.device.channels[0].change_setting('filter', new_filter)
+            assert self.device.channels[0].get_property('filter') == new_filter
             new_osr = 4
             self.device.channels[1].change_setting('osr', new_osr)
-            assert self.device.channels[1]._get_property('osr') == new_osr
+            assert self.device.channels[1].get_property('osr') == new_osr
 
     def test_smu_measure_voltage(self):
         with self.device.connect():
@@ -210,8 +211,9 @@ class TestOssilaDeviceAndChannels:
     def test_smu_source_and_measure(self):
         with self.device.connect():
             result = self.device.channels[0].source_and_measure(0.)
-            assert type(result) == np.ndarray
+            assert type(result) == tuple
             assert len(result) == 2
+            assert all([isinstance(value, float) for value in result])
 
     def test_vsense_measure_voltage(self):
         with self.device.connect():

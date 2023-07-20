@@ -1,4 +1,5 @@
 import serial
+import time
 
 
 class SerialCommunication:
@@ -21,26 +22,39 @@ class SerialCommunication:
 
     def __enter__(self):
         self.serial = serial.Serial(self.com_port, baudrate=self.baudrate, timeout=self.timeout)
+        time.sleep(0.1)
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         if self.serial is not None and self.serial.is_open:
             self.serial.close()
 
-    def send_signal(self, data: str):
+    def send_data(self, data: str):
         """
-        Send a signal or command to the connected device over the serial interface.
+        Send data to the connected device over the serial interface.
 
         :param data: The data to be sent.
         """
         if self.serial is not None and self.serial.is_open:
-            self.serial.write(str(data).encode())
+            self.serial.write(data.encode())
 
-    def receive_signal(self) -> str:
+    def receive_data(self) -> str:
         """
         Receive a signal or response from the connected device over the serial interface.
 
-        :returns: The received signal or response.
+        :returns: The received response.
         """
         if self.serial is not None and self.serial.is_open:
             return self.serial.readline().decode().strip()
+
+    def send_and_receive_data(self, data: str, delay: float = 0.5) -> str:
+        """
+        Send data to the connected device over the serial interface and receive its response after a specified delay.
+
+        :param data: The data to be sent.
+        :param delay: The waiting time in s before receiving the response.
+        :returns: The received response.
+        """
+        self.send_data(data)
+        time.sleep(delay)
+        return self.receive_data()

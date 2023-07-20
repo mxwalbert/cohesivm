@@ -2,14 +2,15 @@ import pytest
 import random
 import numpy as np
 from cohesivm import interfaces, config
+from cohesivm.database import Dimensions
 
 interface_types_to_be_tested = [
     interfaces.InterfaceType.HI_LO
 ]
 
 interfaces_to_be_tested = [
-    interfaces.TrivialHILO(),
-    interfaces.MA8X8(config.get_option('MA8X8', 'com_port'))
+    interfaces.TrivialHILO(Dimensions.Point()),
+    interfaces.MA8X8(config.get_option('MA8X8', 'com_port'), Dimensions.Point())
 ]
 
 
