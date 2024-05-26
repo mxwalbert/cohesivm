@@ -2,10 +2,11 @@
 from __future__ import annotations
 import numpy as np
 import multiprocessing as mp
+import time
 from ..interfaces import InterfaceType
 from ..measurements import MeasurementABC
 from ..devices import DeviceABC
-from ..channels import SourceMeasureUnitChannel
+from ..channels import VoltageSMU, SweepVoltageSMU
 from ..data_stream import FakeQueue
 
 
@@ -13,10 +14,11 @@ class CurrentVoltageCharacteristic(MeasurementABC):
     """A Measurement class for obtaining the current-voltage characteristic of a device."""
 
     _interface_type = InterfaceType.HI_LO
-    _required_channels = [(SourceMeasureUnitChannel,)]
+    _required_channels = [(VoltageSMU, SweepVoltageSMU)]
     _output_type = [('Voltage (V)', float), ('Current (A)', float)]
 
-    def __init__(self, start_voltage: float, end_voltage: float, voltage_step: float, hysteresis: bool = False):
+    def __init__(self, start_voltage: float, end_voltage: float, voltage_step: float, hysteresis: bool = False,
+                 illuminated: bool = True, power_in: float = 0.001):
         """Initializes the measurement for current-voltage characteristic measurements and stores the settings in the
         property `settings` which can be used to create a Metadata object.
 
@@ -25,23 +27,27 @@ class CurrentVoltageCharacteristic(MeasurementABC):
         :param voltage_step: Voltage change for each datapoint in V. Must be larger than 0.
         :param hysteresis: Flags if the voltage range should be measured a second time in reverse order directly after
             the initial measurement.
+        :param illuminated: Flags if the measurement is conducted under illumination.
+        :param power_in: The power of the input radiation source which is used for the efficiency calculation in W/mm^2.
         :raises ValueError: If `voltage_step` is not larger than 0.
         """
         if voltage_step <= 0:
             raise ValueError('Voltage step must be larger than 0!')
-        self.__start_voltage = start_voltage
-        self.__end_voltage = end_voltage
-        self.__voltage_step = voltage_step
-        self.__hysteresis = hysteresis
+        self._start_voltage = start_voltage
+        self._end_voltage = end_voltage
+        self._voltage_step = voltage_step
+        self._hysteresis = hysteresis
         settings = {
             'start_voltage': start_voltage,
             'end_voltage': end_voltage,
             'voltage_step': voltage_step,
-            'hysteresis': hysteresis
+            'hysteresis': hysteresis,
+            'illuminated': illuminated,
+            'power_in': power_in
         }
-        self.__round_digit = self.find_least_significant_digit(voltage_step)
+        self._round_digit = self.find_least_significant_digit(voltage_step)
         voltage_range = end_voltage - start_voltage if end_voltage > start_voltage else start_voltage - end_voltage
-        data_length = int(np.floor(voltage_range / voltage_step) + 1)
+        data_length = int(round(voltage_range / voltage_step, self._round_digit) + 1)
         data_length = data_length * 2 if hysteresis else data_length
         MeasurementABC.__init__(self, settings=settings, output_shape=(data_length, 2))
 
@@ -62,21 +68,32 @@ class CurrentVoltageCharacteristic(MeasurementABC):
         """
         if data_stream is None:
             data_stream = FakeQueue()
-        results = []
-        set_voltage = self.__start_voltage
-        inverse = 1 if self.__start_voltage > self.__end_voltage else 0
         with device.connect():
             device.channels[0].enable()
-            while (set_voltage < self.__end_voltage) ^ inverse or set_voltage == self.__end_voltage:
-                result = device.channels[0].source_and_measure(set_voltage)
+            if isinstance(device.channels[0], SweepVoltageSMU) and device.channels[0].use_hw_sweep:
+                results = device.channels[0].sweep_voltage_and_measure(
+                    self._start_voltage, self._end_voltage, self._voltage_step, self._hysteresis)
+                for result in results:
+                    data_stream.put(result)
+                    time.sleep(0.001)
+            else:
+                results = self._run(device, data_stream)
+        return np.array(results, dtype=self.output_type)
+
+    def _run(self, device: DeviceABC, data_stream: mp.Queue = None) -> list[tuple[float, float]]:
+        results = []
+        set_voltage = self._start_voltage
+        inverse = 1 if self._start_voltage > self._end_voltage else 0
+        while (set_voltage < self._end_voltage) ^ inverse or set_voltage == self._end_voltage:
+            result = device.channels[0].source_voltage_and_measure(set_voltage)
+            results.append(result)
+            data_stream.put(result)
+            set_voltage = round(set_voltage + self._voltage_step * (-1) ** inverse, self._round_digit)
+        if self._hysteresis:
+            set_voltage = round(set_voltage - self._voltage_step * (-1) ** inverse, self._round_digit)
+            while (set_voltage > self._start_voltage) ^ inverse or set_voltage == self._start_voltage:
+                result = device.channels[0].source_voltage_and_measure(set_voltage)
                 results.append(result)
                 data_stream.put(result)
-                set_voltage = round(set_voltage + self.__voltage_step * (-1) ** inverse, self.__round_digit)
-            if self.__hysteresis:
-                set_voltage = round(set_voltage - self.__voltage_step * (-1) ** inverse, self.__round_digit)
-                while (set_voltage > self.__start_voltage) ^ inverse or set_voltage == self.__start_voltage:
-                    result = device.channels[0].source_and_measure(set_voltage)
-                    results.append(result)
-                    data_stream.put(result)
-                    set_voltage = round(set_voltage - self.__voltage_step * (-1) ** inverse, self.__round_digit)
-        return np.array(results, dtype=self.output_type)
+                set_voltage = round(set_voltage - self._voltage_step * (-1) ** inverse, self._round_digit)
+        return results

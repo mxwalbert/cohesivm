@@ -6,16 +6,12 @@ import multiprocessing as mp
 from enum import Enum
 from typing import List
 from abc import ABC, abstractmethod
+from . import CompatibilityError
 from .interfaces import InterfaceABC
 from .measurements import MeasurementABC
 from .devices import DeviceABC
 from .database import Database, Metadata
 from .data_stream import FakeQueue
-
-
-class CompatibilityError(Exception):
-    """Raised if the components/parameters of a composite class are not compatible with each other."""
-    pass
 
 
 class ExperimentState(Enum):
@@ -185,7 +181,7 @@ class Experiment(ExperimentABC):
         """
         state = mp.Value('i', ExperimentState.INITIAL.value)
         if selected_pixels is None:
-            selected_pixels = interface.pixels
+            selected_pixels = interface.pixel_ids
         if data_stream is None:
             data_stream = FakeQueue()
         ExperimentABC.__init__(self, state, database, device, measurement, interface, sample_id, selected_pixels,
@@ -194,7 +190,7 @@ class Experiment(ExperimentABC):
         self._current_pixel_idx = mp.Value('i', -2)
 
     def _check_pixel_compatibility(self, pixel: str):
-        if pixel not in self.interface.pixels:
+        if pixel not in self.interface.pixel_ids:
             raise CompatibilityError(f"The selected pixel {pixel} is not available on the interface!")
 
     def _check_compatibility(self):
@@ -255,9 +251,10 @@ class Experiment(ExperimentABC):
             channels=self.device.channels_names,
             channels_settings=self.device.channels_settings,
             interface=self.interface.name,
-            sample_dimensions=self.interface.sample_dimensions,
-            sample_layout=self.interface.sample_layout,
-            pixel_dimensions=self.interface.pixel_dimensions
+            sample_dimensions=str(self.interface.sample_dimensions),
+            pixel_ids=self.interface.pixel_ids,
+            pixel_positions=list(self.interface.pixel_positions.values()),
+            pixel_dimensions=[str(pixel_dimension) for pixel_dimension in self.interface.pixel_dimensions.values()]
         )
         self._current_pixel_idx.value = -1
         self._dataset = self.database.initialize_dataset(metadata)
@@ -291,7 +288,7 @@ class Experiment(ExperimentABC):
             self.interface.select_pixel(pixel)
             time.sleep(0.5)
             data = self.measurement.run(self.device, self.data_stream)
-            self.database.save(data, self.dataset, pixel)
+            self.database.save_data(data, self.dataset, pixel)
         self._current_pixel_idx.value = self.current_pixel_idx + 1
         self._state = ExperimentState.FINISHED
 

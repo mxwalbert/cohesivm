@@ -1,16 +1,14 @@
 import pytest
 import os
 import time
-import numpy as np
 import multiprocessing as mp
-from typing import Tuple, Any
-from cohesivm import experiment, database
-from cohesivm.interfaces import InterfaceType, InterfaceABC
-from cohesivm.experiment import StateError, ExperimentState, CompatibilityError
-from cohesivm.measurements import MeasurementABC
+from cohesivm import experiment, database, CompatibilityError
+from cohesivm.interfaces import InterfaceType
+from cohesivm.experiment import StateError, ExperimentState
 from cohesivm.devices import DeviceABC
-from cohesivm.channels import ChannelABC, SourceMeasureUnitChannel, VoltmeterChannel
+from cohesivm.channels import VoltmeterChannel
 from cohesivm.database import Metadata, Dimensions
+from . import DemoDevice, DemoMeasurement, DemoInterface
 
 
 @pytest.fixture
@@ -20,61 +18,10 @@ def db():
     os.remove(db.path)
 
 
-class DemoSourceMeasureUnitChannel(ChannelABC, SourceMeasureUnitChannel):
-
-    def set_property(self, name: str, value: Any):
-        pass
-
-    def get_property(self, name: str) -> Any:
-        pass
-
-    def _check_settings(self):
-        pass
-
-    def enable(self):
-        pass
-
-    def disable(self):
-        pass
-
-    def measure_voltage(self) -> float:
-        pass
-
-    def measure_current(self) -> float:
-        pass
-
-    def source_voltage(self, voltage: float):
-        pass
-
-    def source_and_measure(self, voltage: float) -> Tuple[float, float]:
-        pass
-
-
-class DemoDevice(DeviceABC):
-    def __init__(self):
-        DeviceABC.__init__(self, [DemoSourceMeasureUnitChannel()])
-
-    def _establish_connection(self) -> bool:
-        return True
-
-
 class DemoDevice2(DemoDevice):
     def __init__(self):
         DemoDevice.__init__(self)
         self._channels = []
-
-
-class DemoMeasurement(MeasurementABC):
-    _name = 'demo'
-    _interface_type = InterfaceType.Demo1
-    _required_channels = [(SourceMeasureUnitChannel, VoltmeterChannel)]
-    _output_type = np.dtype([('x', float), ('y', float)])
-
-    def __init__(self):
-        MeasurementABC.__init__(self, {}, (1, 0))
-
-    def run(self, device: DeviceABC, data_stream: mp.Queue):
-        return np.array([0])
 
 
 class DemoMeasurement2(DemoMeasurement):
@@ -94,19 +41,6 @@ class DemoMeasurement3(DemoMeasurement):
             pass
 
 
-class DemoInterface(InterfaceABC):
-    _interface_type = InterfaceType.Demo1
-    _pixels = ['0']
-    _sample_layout = {'0': np.array([0, 0])}
-    _sample_dimensions = Dimensions.Point()
-
-    def __init__(self):
-        InterfaceABC.__init__(self, pixel_dimensions=Dimensions.Point())
-
-    def _select_pixel(self, pixel: str):
-        pass
-
-
 class DemoInterface2(DemoInterface):
     _interface_type = InterfaceType.Demo2
 
@@ -119,8 +53,8 @@ cases_compatibility_error = [
 ]
 
 
-@pytest.mark.parametrize("interface,device,measurement,pixels", cases_compatibility_error)
-def test_compatibility_error(db, interface, device, measurement, pixels):
+@pytest.mark.parametrize("interface,device,measurement,pixel_ids", cases_compatibility_error)
+def test_compatibility_error(db, interface, device, measurement, pixel_ids):
     with pytest.raises(CompatibilityError):
         experiment.Experiment(
             database=db,
@@ -128,7 +62,7 @@ def test_compatibility_error(db, interface, device, measurement, pixels):
             measurement=measurement,
             interface=interface,
             sample_id='Test',
-            selected_pixels=pixels
+            selected_pixels=pixel_ids
         )
 
 
@@ -166,9 +100,10 @@ class TestExperiment:
             channels=demo_experiment.device.channels_names,
             channels_settings=demo_experiment.device.channels_settings,
             interface=demo_experiment.interface.name,
-            sample_dimensions=Dimensions.Point(),
-            sample_layout=demo_experiment.interface.sample_layout,
-            pixel_dimensions=Dimensions.Point()
+            sample_dimensions=str(Dimensions.Point()),
+            pixel_ids=demo_experiment.interface.pixel_ids,
+            pixel_positions=list(demo_experiment.interface.pixel_positions.values()),
+            pixel_dimensions=[str(Dimensions.Point()) for _ in demo_experiment.interface.pixel_ids]
         )
 
         for state in [ExperimentState.READY, ExperimentState.RUNNING]:
@@ -178,7 +113,7 @@ class TestExperiment:
 
         demo_experiment._state = ExperimentState.INITIAL
         demo_experiment.setup()
-        assert demo_experiment.dataset == f'/{demo_experiment.measurement.name}/{metadata.settings_string}/{db._timestamp}-{demo_experiment.sample_id}'
+        assert demo_experiment.dataset == f'/{demo_experiment.measurement.name}/{metadata.settings_hash}/{db._timestamp}-{demo_experiment.sample_id}'
         assert demo_experiment.state == ExperimentState.READY
 
     def test_preview_and_execute(self, demo_experiment):

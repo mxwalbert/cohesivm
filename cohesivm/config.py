@@ -3,8 +3,11 @@ import configparser
 from typing import Dict, Any
 
 path = 'config.ini'
-if not os.path.isfile(path):
-    path = f'../{path}'
+for _ in range(10):
+    if not os.path.isfile(path):
+        path = f'../{path}'
+    else:
+        break
 _config = configparser.ConfigParser()
 _config.read(path)
 

@@ -2,7 +2,7 @@ from __future__ import annotations
 import pytest
 import configparser
 from cohesivm import config
-from cohesivm.devices.agilent import Agilent4284A, Agilent4284ALCRChannel
+from cohesivm.devices.agilent.Agilent4284A import Agilent4284A, Agilent4284ALCRChannel
 from cohesivm.devices.ossila import OssilaX200SMUChannel
 
 

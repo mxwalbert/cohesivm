@@ -2,11 +2,7 @@
 from __future__ import annotations
 import threading
 import multiprocessing as mp
-import matplotlib.pyplot as plt
-import matplotlib.ticker as ticker
-import numpy as np
-from abc import ABC, abstractmethod
-from typing import Tuple
+from abc import ABC
 
 
 class DataStreamABC(ABC):
@@ -23,50 +19,13 @@ class DataStreamABC(ABC):
         return self._data_stream
 
 
-class PlotABC(DataStreamABC):
-    """Creates an ``mp.Queue`` object which is used to stream data from a measurement (implementing ``MeasurementABC``)
-    to a ``matplotlib.figure.Figure`` object where the streamed data is put into. A child class implements the methods
-    for updating the data and the figure. Its intended use is within the GUI class."""
-    _data_types = NotImplemented
-
-    def __init__(self):
-        DataStreamABC.__init__(self)
-        self._figure = None
-
-    @property
-    def data_types(self) -> Tuple[type]:
-        """A tuple of Numpy data types which corresponds to the expected shape of data points."""
-        if self._data_types is NotImplemented:
-            raise NotImplementedError
-        return self._data_types
-
-    @property
-    def figure(self) -> plt.Figure | None:
-        """The ``matplotlib.pyplot.Figure`` object which is populated with the data."""
-        return self._figure
-
-    @abstractmethod
-    def make_plot(self):
-        """Generates the canvas of the plot and populates the static elements."""
-        pass
-
-    @abstractmethod
-    def update_plot(self):
-        """Fetches the data from the `data_stream` and puts it in the figure."""
-        pass
-
-    @abstractmethod
-    def clear_plot(self):
-        """Restores the plot to its initial state and removes all displayed data."""
-        pass
-
-
 class FakeQueue:
     """Mimics the queue.Queue class to be used as default value for methods which implement an optional data stream.
     Simplifies the methods because they do not have to care if the queue is actually present and also prevents
     unnecessary data accumulation."""
     @staticmethod
     def put(data):
+        """Does nothing."""
         pass
 
 
@@ -79,7 +38,7 @@ class ProgressBar(DataStreamABC):
     def __init__(self, num_pixels: int, num_datapoints: int):
         """Initializes the ProgressBar object.
 
-        :param num_pixels: The number of pixels which are measured in the ``ExperimentABC``.
+        :param num_pixels: The number of pixel_ids which are measured in the ``ExperimentABC``.
         :param num_datapoints: The number of datapoints of each ``MeasurementABC``.
         """
         DataStreamABC.__init__(self)
@@ -126,55 +85,3 @@ class ProgressBar(DataStreamABC):
     def close(self):
         """Puts the `terminate_string` into the `data_stream`."""
         self.data_stream.put(self.terminate_string)
-
-
-class Simple2DPlot(PlotABC):
-    """Generates and updates a two-dimensional x-y-plot with the data which is put in the `data_stream` queue."""
-
-    _data_types = (np.floating, np.floating)
-
-    def __init__(self, x_label: str, y_label: str, figsize: Tuple[float, float] = (7, 5.5)):
-        """Initializes the Simple2DPlot object and populates the `data_stream` property.
-
-        :param x_label: Label of the x axis.
-        :param y_label: Label of the y axis.
-        :param figsize: Size of the figure in inch (see matplotlib.figure.Figure)."""
-        PlotABC.__init__(self)
-        self.x_label = x_label
-        self.y_label = y_label
-        self.figsize = figsize
-        self.ax = None
-
-    def make_plot(self):
-        self._figure, self.ax = plt.subplots(figsize=self.figsize)
-        self.ax.set_box_aspect(self.figsize[1] / self.figsize[0])
-        self.ax.set_xlabel(self.x_label, fontsize=14, fontweight='bold')
-        self.ax.set_ylabel(self.y_label, fontsize=14, fontweight='bold')
-        self.ax.tick_params(axis='both', labelsize=10)
-        self.ax.xaxis.set_major_formatter('{:.1E}'.format)
-        self.ax.yaxis.set_major_formatter('{:.1E}'.format)
-        self.ax.xaxis.set_major_locator(ticker.MaxNLocator(nbins=5))
-        self.ax.yaxis.set_major_locator(ticker.MaxNLocator(nbins=5))
-        self.ax.plot([], [])
-
-    def update_plot(self):
-        line = self.ax.lines[0]
-        while not self.data_stream.empty():
-            data = self.data_stream.get()
-            if len(data) == 2:
-                old_x, old_y = line.get_data()
-                new_x = list(old_x) + [data[0]]
-                new_y = list(old_y) + [data[1]]
-                line.set_data(new_x, new_y)
-                if len(new_x) > 1:
-                    x_ticks = np.linspace(min(new_x), max(new_x), 5)
-                    y_ticks = np.linspace(min(new_y), max(new_y), 5)
-                    self.ax.relim()
-                    self.ax.autoscale()
-                    self.ax.xaxis.set_major_locator(ticker.FixedLocator(x_ticks))
-                    self.ax.yaxis.set_major_locator(ticker.FixedLocator(y_ticks))
-
-    def clear_plot(self):
-        self.update_plot()
-        line = self.ax.lines[0]
-        line.set_data([], [])

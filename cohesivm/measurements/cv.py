@@ -35,12 +35,12 @@ class CapacitanceVoltageProfiling(MeasurementABC):
             raise ValueError('Voltage step must be larger than 0!')
         if oscillator_voltage is False and oscillator_current is False:
             raise ValueError('One of `oscillator_voltage` or `oscillator_current` must be set!')
-        self.__frequency = frequency
-        self.__start_voltage = start_voltage
-        self.__end_voltage = end_voltage
-        self.__voltage_step = voltage_step
-        self.__oscillator_voltage = oscillator_voltage
-        self.__oscillator_current = oscillator_current
+        self._frequency = frequency
+        self._start_voltage = start_voltage
+        self._end_voltage = end_voltage
+        self._voltage_step = voltage_step
+        self._oscillator_voltage = oscillator_voltage
+        self._oscillator_current = oscillator_current
         settings = {
             'frequency': frequency,
             'start_voltage': start_voltage,
@@ -49,7 +49,7 @@ class CapacitanceVoltageProfiling(MeasurementABC):
             'oscillator_voltage': oscillator_voltage,
             'oscillator_current': oscillator_current
         }
-        self.__round_digit = self.find_least_significant_digit(voltage_step)
+        self._round_digit = self.find_least_significant_digit(voltage_step)
         voltage_range = end_voltage - start_voltage if end_voltage > start_voltage else start_voltage - end_voltage
         data_length = int(np.floor(voltage_range / voltage_step) + 1)
         MeasurementABC.__init__(self, settings=settings, output_shape=(data_length, 2))
@@ -72,18 +72,18 @@ class CapacitanceVoltageProfiling(MeasurementABC):
         if data_stream is None:
             data_stream = FakeQueue()
         results = []
-        set_voltage = self.__start_voltage
-        inverse = 1 if self.__start_voltage > self.__end_voltage else 0
+        set_voltage = self._start_voltage
+        inverse = 1 if self._start_voltage > self._end_voltage else 0
         with device.connect():
             device.channels[0].enable()
-            if self.__oscillator_voltage is False:
-                device.channels[0].set_oscillator_current(self.__oscillator_current)
+            if self._oscillator_voltage is False:
+                device.channels[0].set_oscillator_current(self._oscillator_current)
             else:
-                device.channels[0].set_oscillator_voltage(self.__oscillator_voltage)
-            device.channels[0].set_oscillator_frequency(self.__frequency)
-            while (set_voltage < self.__end_voltage) ^ inverse or set_voltage == self.__end_voltage:
+                device.channels[0].set_oscillator_voltage(self._oscillator_voltage)
+            device.channels[0].set_oscillator_frequency(self._frequency)
+            while (set_voltage < self._end_voltage) ^ inverse or set_voltage == self._end_voltage:
                 result = device.channels[0].measure_impedance()
                 results.append(result)
                 data_stream.put(result)
-                set_voltage = round(set_voltage + self.__voltage_step * (-1) ** inverse, self.__round_digit)
+                set_voltage = round(set_voltage + self._voltage_step * (-1) ** inverse, self._round_digit)
         return np.array(results, dtype=self.output_type)

@@ -1,8 +1,9 @@
 """Module contains the implemented measurements which inherit the Measurement Abstract Base Class ."""
+from __future__ import annotations
 import numpy as np
 import multiprocessing as mp
 from abc import ABC, abstractmethod
-from typing import List, Tuple
+from typing import List, Tuple, Type
 from ..database import database_dict_type
 from ..interfaces import InterfaceType
 from ..devices import DeviceABC
@@ -43,7 +44,7 @@ class MeasurementABC(ABC):
         return self._required_channels
 
     @property
-    def output_type(self) -> np.dtype:
+    def output_type(self) -> np.dtype | List[Tuple[str, Type]]:
         """The Numpy data type of the measurement result."""
         if self._output_type is NotImplemented:
             raise NotImplementedError

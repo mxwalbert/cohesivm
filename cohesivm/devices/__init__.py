@@ -4,7 +4,7 @@ from __future__ import annotations
 import contextlib
 from abc import ABC, abstractmethod
 from typing import List, Any
-from ..channels import ChannelABC, ChannelMethodsABC
+from ..channels import ChannelABC, TChannelABC
 from ..database import database_dict_type
 
 
@@ -20,7 +20,7 @@ def requires_connection(method):
 class DeviceABC(ABC):
     """Implements the connection and the channels of a measurement device."""
 
-    def __init__(self, channels: List[Any]):
+    def __init__(self, channels: List[TChannelABC]):
         self._channels = channels
 
     @property
@@ -29,7 +29,7 @@ class DeviceABC(ABC):
         return self.__class__.__name__
 
     @property
-    def channels(self) -> List[ChannelABC | ChannelMethodsABC]:
+    def channels(self) -> List[ChannelABC]:
         """A list of ``Channel`` instances."""
         return self._channels
 

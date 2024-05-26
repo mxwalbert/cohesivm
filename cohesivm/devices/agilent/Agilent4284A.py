@@ -1,4 +1,4 @@
-"""Implements the Agilent 4284A Precision LCR Meter and the Agilent 4156C Precision Semiconductor Parameter Analyzer.
+"""Implements the Agilent 4284A Precision LCR Meter.
 Requires the PyVISA package for controlling devices over the Virtual Instrument Software Architecture protocol."""
 from __future__ import annotations
 import importlib
@@ -11,11 +11,11 @@ import time
 import math
 import warnings
 from typing import List, Any, Tuple
-from . import ChannelABC, DeviceABC, requires_connection
-from ..channels import LCRMeterChannel
+from .. import DeviceABC, requires_connection
+from ...channels import LCRMeter
 
 
-class Agilent4284ALCRChannel(LCRMeterChannel, ChannelABC):
+class Agilent4284ALCRChannel(LCRMeter):
     """LCR meter channel of the Agilent 4284A device which can measure the inductance (L), capacitance (C), and
     resistance (R) of an electronic component. For more details and specifications see the user manual of the
     Agilent 4284A."""
@@ -41,7 +41,7 @@ class Agilent4284ALCRChannel(LCRMeterChannel, ChannelABC):
             'APERTURE': f'{s_integration_time},{s_averaging_rate}',
             'AMPLITUDE:ALC': 'ON' if s_automatic_level_control else 'OFF'
         }
-        ChannelABC.__init__(self, self._identifier, self._settings)
+        LCRMeter.__init__(self, self._identifier, self._settings)
         self._trigger_delay = s_trigger_delay
 
     @requires_connection
@@ -61,14 +61,12 @@ class Agilent4284ALCRChannel(LCRMeterChannel, ChannelABC):
         """
         return self.connection.query(command)
 
-    @requires_connection
     def set_property(self, name: str, value: Any = None):
         if value is None:
             self._write(name)
         else:
             self._write(f'{name} {value}')
 
-    @requires_connection
     def get_property(self, name: str) -> Any:
         return self._query(f'{name}?')
 
@@ -78,7 +76,7 @@ class Agilent4284ALCRChannel(LCRMeterChannel, ChannelABC):
         except ValueError:
             raise TypeError('Setting `TRIGGER:DELAY` cannot be cast to int!')
         if trigger_delay < 0 or trigger_delay > 60000:
-            raise ValueError('Setting `TRIGGER:DELAY` must be between 0 an 60000!')
+            raise ValueError('Setting `TRIGGER:DELAY` must be between 0 and 60000!')
         self._trigger_delay = trigger_delay
         self._settings['TRIGGER:DELAY'] = f'{trigger_delay}'
         try:
@@ -99,7 +97,6 @@ class Agilent4284ALCRChannel(LCRMeterChannel, ChannelABC):
         if self._settings['AMPLITUDE:ALC'] not in ['ON', 'OFF']:
             raise ValueError('Setting `AMPLITUDE:ALC` must be "ON" or "OFF!')
 
-    @requires_connection
     def enable(self):
         self.disable()
         self.set_property('FUNCTION:IMPEDANCE', 'ZTD')
@@ -109,7 +106,6 @@ class Agilent4284ALCRChannel(LCRMeterChannel, ChannelABC):
         self.set_property('OUTPUT:HPOWER', 'ON')
         self.set_property('BIAS:STATE', 'ON')
 
-    @requires_connection
     def disable(self):
         self.set_property('*RST;*CLS')
         self.set_property('ABORT')
@@ -117,7 +113,6 @@ class Agilent4284ALCRChannel(LCRMeterChannel, ChannelABC):
         self.source_current(0)
         self.set_property('BIAS:STATE', 'OFF')
 
-    @requires_connection
     def source_voltage(self, voltage: float):
         """Resets the bias current and sets the bias voltage to the defined value.
 
@@ -142,7 +137,6 @@ class Agilent4284ALCRChannel(LCRMeterChannel, ChannelABC):
             voltage = round(voltage, 3)
         self.set_property('BIAS:VOLTAGE', f'{voltage:.3f}')
 
-    @requires_connection
     def source_current(self, current: float):
         """Resets the bias voltage and sets the bias current to the defined value.
 
@@ -165,7 +159,6 @@ class Agilent4284ALCRChannel(LCRMeterChannel, ChannelABC):
             current = round(current, 5)
         self.set_property('BIAS:CURRENT', f'{current:.5f}')
 
-    @requires_connection
     def set_oscillator_frequency(self, frequency: float):
         """Sets the AC frequency of the oscillator to the defined value.
 
@@ -177,7 +170,6 @@ class Agilent4284ALCRChannel(LCRMeterChannel, ChannelABC):
         frequency = round(frequency, 12)
         self.set_property('FREQUENCY', f'{frequency:.12f}')
 
-    @requires_connection
     def set_oscillator_voltage(self, voltage: float):
         """Resets the AC current and sets the AC voltage of the oscillator to the defined value.
 
@@ -196,7 +188,6 @@ class Agilent4284ALCRChannel(LCRMeterChannel, ChannelABC):
             voltage = round(voltage, 3)
         self.set_property('VOLTAGE', f'{voltage:.3f}')
 
-    @requires_connection
     def set_oscillator_current(self, current: float):
         """Resets the AC voltage and sets the AC current of the oscillator to the defined value.
 
@@ -215,7 +206,6 @@ class Agilent4284ALCRChannel(LCRMeterChannel, ChannelABC):
             current = round(current, 5)
         self.set_property('CURRENT', f'{current:.5f}')
 
-    @requires_connection
     def measure_impedance(self) -> Tuple[float, float]:
         self.set_property('TRIGGER:IMMEDIATE')
         time.sleep(self._trigger_delay / 1000)

@@ -4,6 +4,7 @@ from abc import ABC, abstractmethod
 from typing import List, Dict, Tuple
 from .serial_communication import SerialCommunication
 from .database import Dimensions
+import time
 
 
 class InterfaceType:
@@ -29,12 +30,14 @@ class InterfaceABC(ABC):
     A method for generating a dictionary which holds the corresponding sample layout must be implemented as well."""
 
     _interface_type = NotImplemented
-    _pixels = NotImplemented
-    _sample_layout = NotImplemented
     _sample_dimensions = NotImplemented
+    _pixel_ids = NotImplemented
+    _pixel_positions = NotImplemented
 
     @abstractmethod
     def __init__(self, pixel_dimensions: Dimensions.Shape | Dict[str, Dimensions.Shape]):
+        if type(pixel_dimensions) != dict:
+            pixel_dimensions = {pixel: pixel_dimensions for pixel in self.pixel_ids}
         self._pixel_dimensions = pixel_dimensions
 
     @property
@@ -50,13 +53,6 @@ class InterfaceABC(ABC):
         return self._interface_type
 
     @property
-    def pixels(self) -> List[str]:
-        """List of available pixels."""
-        if self._pixels is NotImplemented:
-            raise NotImplementedError
-        return self._pixels
-
-    @property
     def sample_dimensions(self) -> Dimensions.Shape:
         """The size and shape of the sample used with this interface represented by a ``Dimensions.Shape`` object."""
         if self._sample_dimensions is NotImplemented:
@@ -64,17 +60,24 @@ class InterfaceABC(ABC):
         return self._sample_dimensions
 
     @property
-    def sample_layout(self) -> Dict[str, Tuple[float, float]]:
-        """A dictionary which contains the pixel ids as string values and their location on the sample as tuples of
-        floats. The coordinates are given in mm and the origin is in the bottom-left corner."""
-        if self._sample_layout is NotImplemented:
+    def pixel_ids(self) -> List[str]:
+        """List of available pixels."""
+        if self._pixel_ids is NotImplemented:
             raise NotImplementedError
-        return self._sample_layout
+        return self._pixel_ids
 
     @property
-    def pixel_dimensions(self) -> Dimensions.Shape | Dict[str, Dimensions.Shape]:
-        """The size and shape of the pixels on the sample represented by a ``Dimensions.Shape`` object or a dictionary
-        of the pixel ids mapping to ``Dimensions.Shape`` objects."""
+    def pixel_positions(self) -> Dict[str, Tuple[float, float]]:
+        """A dictionary which contains the positions of the pixels on the sample as tuples of floats. The coordinates
+        are given in mm and the origin is in the bottom-left corner."""
+        if self._pixel_positions is NotImplemented:
+            raise NotImplementedError
+        return self._pixel_positions
+
+    @property
+    def pixel_dimensions(self) -> Dict[str, Dimensions.Shape]:
+        """The size and shape of the pixels on the sample represented by a dictionary of ``Dimensions.Shape``
+        objects."""
         return self._pixel_dimensions
 
     def select_pixel(self, pixel: str):
@@ -83,7 +86,7 @@ class InterfaceABC(ABC):
         :param pixel: The pixel value.
         :raises ValueError: If the pixel is not available on the interface.
         """
-        if pixel not in self._pixels:
+        if pixel not in self._pixel_ids:
             raise ValueError(f"Pixel {pixel} is not available!")
         self._select_pixel(pixel)
 
@@ -97,8 +100,8 @@ class TrivialHILO(InterfaceABC):
     and one negative/low-voltage terminal. It can also be used if the selection of pixels is carried out manually
     (not recommended)."""
     _interface_type = InterfaceType.HI_LO
-    _pixels = ['0']
-    _sample_layout = {'0': (0., 0.)}
+    _pixel_ids = ['0']
+    _pixel_positions = {'0': (0., 0.)}
     _sample_dimensions = Dimensions.Point()
 
     def __init__(self, pixel_dimensions: Dimensions.Shape | Dict[str, Dimensions.Shape]):
@@ -113,16 +116,16 @@ class MA8X8(InterfaceABC):
     back contact on an area of 25 mm x 25 mm. The interface is controlled by an Arduino Nano Every board which is
     connected through a serial COM port."""
     _interface_type = InterfaceType.HI_LO
-    _pixels = [str(i+1 + 10*(j+1)) for j in range(8) for i in range(8)]
-    _sample_layout = {pixel: (2.7 + (int(pixel) % 10 - 1) * 2.8, 25.0 - 2.7 - (int(pixel) // 10 - 1) * 2.8)
-                      for pixel in _pixels}
+    _pixel_ids = [str(i + 1 + 10 * (j + 1)) for j in range(8) for i in range(8)]
+    _pixel_positions = {pixel: (2.7 + (int(pixel) % 10 - 1) * 2.8, 25.0 - 2.7 - (int(pixel) // 10 - 1) * 2.8)
+                        for pixel in _pixel_ids}
     _sample_dimensions = Dimensions.Rectangle(25., 25.)
 
     def __init__(self, com_port: str, pixel_dimensions: Dimensions.Shape | Dict[str, Dimensions.Shape]):
         """Initializes the Measurement Array 8x8 interface by defining the serial connection to the Arduino board.
 
         :param com_port: The COM port of the Arduino Nano Every board.
-        :param pixel_dimensions: The size and shape of the pixels on the sample.
+        :param pixel_dimensions: The size and shape of the pixel_ids on the sample.
         """
         InterfaceABC.__init__(self, pixel_dimensions)
         self.arduino = SerialCommunication(com_port, baudrate=9600, timeout=2)
@@ -138,6 +141,7 @@ class MA8X8(InterfaceABC):
 
     def _select_pixel(self, pixel: str):
         with self.arduino as serial:
-            response = serial.send_and_receive_data(str(self.pixels.index(pixel) + 1))
+            response = serial.send_and_receive_data(str(self.pixel_ids.index(pixel) + 1))
             if response != '1':
                 raise RuntimeError(f"Failed to activate pixel {pixel}")
+            time.sleep(0.5)

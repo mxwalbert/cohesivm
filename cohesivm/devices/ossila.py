@@ -10,18 +10,18 @@ import xtralien
 import time
 import numpy as np
 from decimal import Decimal
-from typing import List, Any, Tuple
-from abc import abstractmethod
-from . import ChannelABC, DeviceABC, requires_connection
-from ..channels import SourceMeasureUnitChannel, VoltmeterChannel
+from typing import List, Any, Tuple, TypeVar
+from abc import ABC
+from . import DeviceABC, requires_connection
+from ..channels import ChannelABC, Voltmeter, Amperemeter, VoltageSource, VoltageSMU
 from ..database import database_dict_type
 
 
-class OssilaX200Channel(ChannelABC):
-    """Implements the properties and methods which all Ossila X200 channels have in common."""
+TOssilaX200Channel = TypeVar('TOssilaX200Channel', bound='OssilaX200Channel')
 
-    def __init__(self, identifier, settings):
-        ChannelABC.__init__(self, identifier, settings)
+
+class OssilaX200Channel(ChannelABC, ABC):
+    """Abstract class which implements the properties and methods which all Ossila X200 channels have in common."""
 
     @requires_connection
     def set_property(self, name: str, value: Any):
@@ -37,10 +37,6 @@ class OssilaX200Channel(ChannelABC):
             result = result.replace('\x00', '')
         return result
 
-    @abstractmethod
-    def _check_settings(self):
-        pass
-
     def enable(self):
         self.set_property('enabled', True)
 
@@ -48,7 +44,7 @@ class OssilaX200Channel(ChannelABC):
         self.set_property('enabled', False)
 
 
-class OssilaX200SMUChannel(SourceMeasureUnitChannel, OssilaX200Channel):
+class OssilaX200SMUChannel(OssilaX200Channel, Voltmeter, Amperemeter, VoltageSource, VoltageSMU):
     """A source measure unit (SMU) channel of the Ossila X200 device which can source a voltage and measure the voltage
     and current. For more details and specifications see the user manual of the Ossila X200."""
 
@@ -165,7 +161,7 @@ class OssilaX200SMUChannel(SourceMeasureUnitChannel, OssilaX200Channel):
             self.set_property('range', i)
 
     @requires_connection
-    def source_and_measure(self, voltage: float) -> Tuple[float, float]:
+    def source_voltage_and_measure(self, voltage: float) -> Tuple[float, float]:
         """Sets the output voltage to the defined value, then measures the actual voltage and current.
 
         :param voltage: Output voltage of the power source in V. Must be in [-10, 10].
@@ -187,7 +183,7 @@ class OssilaX200SMUChannel(SourceMeasureUnitChannel, OssilaX200Channel):
         return result[0], result[1]
 
 
-class OssilaX200VsenseChannel(VoltmeterChannel, OssilaX200Channel):
+class OssilaX200VsenseChannel(OssilaX200Channel, Voltmeter):
     """A voltmeter channel (Vsense) of the Ossila X200 device which can measure the voltage with high precision. For
     more details and specifications see the user manual of the Ossila X200."""
 
@@ -221,7 +217,7 @@ class OssilaX200(DeviceABC):
     """Implements the Ossila X200 Source Measure Unit as a Device class which is a container for the channels and the
     device connection. For more details and specifications see the user manual of the Ossila X200."""
 
-    def __init__(self, channels: List[OssilaX200SMUChannel | OssilaX200VsenseChannel] = None,
+    def __init__(self, channels: List[TOssilaX200Channel] = None,
                  address: str = '', port: int = 0, serial_timeout: float = 0.1):
         """Initializes the Ossila X200 Source Measure Unit.
 
@@ -232,12 +228,10 @@ class OssilaX200(DeviceABC):
         :param serial_timeout: Timeout for the serial connection over USB in s.
         :raises TypeError: If a channel is not an OssilaX200Channel. If connection arguments `port` and `serial_timeout`
             cannot be cast to their required type.
-        :raises ValueError: If too many channels or duplicate channels are provided.
+        :raises ValueError: If duplicate channels are provided.
         """
         if channels is None:
             channels = [OssilaX200SMUChannel()]
-        if len(channels) > 4:
-            raise ValueError('Number of channels must not exceed 4!')
         channel_identifiers = set()
         for channel in channels:
             if not isinstance(channel, OssilaX200Channel):
@@ -257,7 +251,7 @@ class OssilaX200(DeviceABC):
         DeviceABC.__init__(self, channels)
 
     @property
-    def channels(self) -> List[OssilaX200SMUChannel | OssilaX200VsenseChannel]:
+    def channels(self) -> List[TOssilaX200Channel]:
         return self._channels
 
     def _establish_connection(self) -> xtralien.Device:
