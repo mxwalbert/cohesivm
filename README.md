@@ -53,12 +53,8 @@ specify the ``gui`` extra:
 pip install cohesivm[gui]
 ```
 
-Further extras exist for the implemented devices and for developers:
-
-```{literalinclude} ..\..\..\pyproject.toml
-:start-after: start-extras
-:end-before: end-extras
-```
+Further extras exist for the implemented devices and for developers (refer to the ``pyproject.toml`` in the source 
+files to get a listing of all available optional dependencies).
 
 #### Cloning from GitHub
 If you want to install the development version of the package from the GitHub repository, follow these steps:

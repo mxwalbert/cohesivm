@@ -1,11 +1,11 @@
 import re
 import os
 import sys
-import toml
+import tomli
 
 
-with open('../pyproject.toml', 'r') as f:
-    config = toml.load(f)
+with open('../pyproject.toml', 'rb') as f:
+    config = tomli.load(f)
 
 
 def reformat_line(line, codeblock, depth):
