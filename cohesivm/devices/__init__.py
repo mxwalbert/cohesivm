@@ -1,26 +1,22 @@
-"""Module contains the implemented devices which inherit the Device Abstract Base Class and consist of device channels
-which implement the measurement methods."""
+"""This Module contains the :class:`Device` Abstract Base Class and the implemented devices (standalone modules) which
+follow this ABC. The main responsibilities are to establish the communication with the physical device and to contain
+the measurement channels (:class:`~cohesivm.channels.Channel`). For simplicity, the source code of the channel
+implementations may also be put into the modules of the devices."""
 from __future__ import annotations
 import contextlib
 from abc import ABC, abstractmethod
-from typing import List, Any
-from ..channels import ChannelABC, TChannelABC
-from ..database import database_dict_type
+from typing import List, Any, Generator
+from cohesivm.channels import TChannel
+from cohesivm.database import DatabaseDict
 
 
-def requires_connection(method):
-    def wrapper(self, *args, **kwargs):
-        if self.connection is None:
-            raise RuntimeError('A device connection must be established in order to communicate with the channel!')
-        result = method(self, *args, **kwargs)
-        return result
-    return wrapper
+class Device(ABC):
+    """Implements the connection and the channels of a measurement device.
 
+    :param channels: A list of implemented :class:`~cohesivm.channels.Channel` instances.
+    """
 
-class DeviceABC(ABC):
-    """Implements the connection and the channels of a measurement device."""
-
-    def __init__(self, channels: List[TChannelABC]):
+    def __init__(self, channels: List[TChannel]) -> None:
         self._channels = channels
 
     @property
@@ -29,31 +25,44 @@ class DeviceABC(ABC):
         return self.__class__.__name__
 
     @property
-    def channels(self) -> List[ChannelABC]:
-        """A list of ``Channel`` instances."""
+    def channels(self) -> List[TChannel]:
+        """A list of implemented :class:`~cohesivm.channels.Channel` instances."""
         return self._channels
 
     @property
     def channels_names(self) -> List[str]:
-        """List of class names of the channels."""
+        """A list of class names of the channels."""
         return [channel.__class__.__name__ for channel in self._channels]
 
     @property
-    def channels_settings(self) -> List[database_dict_type]:
-        """List of settings dictionaries of the channels."""
+    def channels_settings(self) -> List[DatabaseDict]:
+        """A list of settings dictionaries of the channels."""
         return [channel.settings for channel in self._channels]
 
     @abstractmethod
     def _establish_connection(self) -> Any:
-        """Opens the device connection and returns the resource."""
+        """Opens the device connection and returns the resource.
+
+        :meta public:
+        """
 
     @contextlib.contextmanager
-    def connect(self):
+    def connect(self) -> Generator[None, None, None]:
         """Establishes the connection to the device and enables its channels. Must be used in form of a resource such
-        that the channels are disabled and the connection is closed safely."""
+        that the channels are disabled and the connection is closed safely.
+
+        Example
+        -------
+
+        .. code-block:: python
+
+            with device.connect():
+                device.channel[0].measure()
+        """
         connection = self._establish_connection()
         for channel in self._channels:
             channel._connection = connection
+            channel.enable()
             channel.apply_settings()
         try:
             yield
@@ -65,3 +74,6 @@ class DeviceABC(ABC):
                 connection.close()
             except AttributeError:
                 pass
+
+
+from . import ossila, agilent

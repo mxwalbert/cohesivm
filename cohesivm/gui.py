@@ -1,5 +1,4 @@
 from __future__ import annotations
-
 import ipywidgets
 import IPython.display
 import threading
@@ -7,25 +6,102 @@ import time
 import datetime
 import bqplot
 import numpy as np
-from typing import Dict, Tuple, Callable
-from .experiment import ExperimentState, ExperimentABC
-from .analysis import AnalysisABC
-from .plots import DataStreamPlotABC, PlotABC
-from .database import Database
+from abc import abstractmethod
+from typing import Dict, Tuple, Callable, List, Union
+from cohesivm.experiment import ExperimentState, Experiment
+from cohesivm.analysis import Analysis
+from cohesivm.data_stream import DataStream
+from cohesivm.plots import Plot
+from cohesivm.database import Database
 
 
-class InterfacePlotGUI:
+class DataStreamPlot(DataStream, Plot):
+    """A :class:`multiprocessing.Queue` object which is used to stream data from a
+    :class:`~cohesivm.measurements.Measurement` to a :class:`bqplot.Figure` object where the streamed data
+    is put into. A child class implements the methods for updating the data and the figure. Its intended use is within
+    the :class:`~cohesivm.gui.ExperimentGUI`."""
+
+    def __init__(self) -> None:
+        DataStream.__init__(self)
+        Plot.__init__(self)
+
+    @abstractmethod
+    def update_plot(self) -> None:
+        """Fetches the data from the :attr:`~cohesivm.data_stream.DataStream.data_stream` and puts it in the figure."""
+        pass
+
+
+class XYDataStreamPlot(DataStreamPlot):
+    """Generates and updates a two-dimensional x-y-plot with the data which is put in the ``data_stream`` queue.
+
+    :param x_label: Label of the x-axis.
+    :param y_label: Label of the y-axis.
+    :param figsize: Size of the figure in inch (see :class:`matplotlib.figure.Figure`).
+    """
+
+    _data_types = (np.floating, np.floating)
+
+    def __init__(self, x_label: str, y_label: str, figsize: Tuple[float, float] = (7, 5.5)) -> None:
+        DataStreamPlot.__init__(self)
+        self.x_label = x_label
+        self.y_label = y_label
+        self.figsize = figsize
+        self._line = None
+        self._x_sc = None
+        self._y_sc = None
+
+    @property
+    def figure(self) -> Union[bqplot.Figure, None]:
+        """The :class:`bqplot.Figure` object which is populated with the data."""
+        return self._figure
+
+    def make_plot(self) -> None:
+        self._x_sc, self._y_sc = bqplot.LinearScale(min=-1, max=1), bqplot.LinearScale(min=-1, max=1)
+        x_ax = bqplot.Axis(scale=self._x_sc, label=self.x_label, tick_format='.1f', grid_lines='solid',
+                           label_offset='30')
+        y_ax = bqplot.Axis(scale=self._y_sc, label=self.y_label, tick_format='.1e', grid_lines='solid',
+                           label_offset='-50', orientation='vertical')
+        x_ax.num_ticks = 7
+        self._line = bqplot.Lines(x=[], y=[], scales={'x': self._x_sc, 'y': self._y_sc})
+        self._figure = bqplot.Figure(marks=[self._line], axes=[x_ax, y_ax],
+                                     figsize=self.figsize, padding_x=0, padding_y=0,
+                                     fig_margin={'top': 10, 'bottom': 45, 'left': 65, 'right': 30})
+
+    def update_plot(self) -> None:
+        while not self.data_stream.empty():
+            data = self.data_stream.get()
+            if len(data) == 2:
+                self._line.x = list(self._line.x) + [data[0]]
+                self._line.y = list(self._line.y) + [data[1]]
+        if len(self._line.x) > 1:
+            self._x_sc.min = None
+            self._x_sc.max = None
+            self._y_sc.min = None
+            self._y_sc.max = None
+
+    def clear_plot(self) -> None:
+        self.update_plot()
+        self._x_sc.min = -1
+        self._x_sc.max = 1
+        self._y_sc.min = -1
+        self._y_sc.max = 1
+        self._line.x = []
+        self._line.y = []
+
+
+class _InterfacePlotGUI:
     def __init__(self):
         self.plot = None
         self.interface_frame = None
         self.plot_frame = None
 
-    def _make_interface_frame(self, pixel_positions: Dict[str, Tuple[float, float]], height: int):
+    def _make_interface_frame(self, contact_positions: Dict[str, Tuple[float, float]], height: int
+                              ) -> ipywidgets.Output:
         interface_frame = ipywidgets.Output(layout=ipywidgets.Layout(height=f'{height}px'))
         interface_frame.add_class('interface-frame')
         x_coords = []
         y_coords = []
-        for coords in pixel_positions.values():
+        for coords in contact_positions.values():
             x_coords.append(coords[0])
             y_coords.append(coords[1])
         x_lim, y_lim = [(min(coords), max(coords)) for coords in [x_coords, y_coords]]
@@ -38,7 +114,7 @@ class InterfacePlotGUI:
             y_lim = (y_center - x_len/2, y_center + x_len/2)
         x_scale = bqplot.LinearScale(min=x_lim[0]-x_len*.1, max=x_lim[1]+x_len*.1)
         y_scale = bqplot.LinearScale(min=y_lim[0]-y_len*.1, max=y_lim[1]+y_len*.1)
-        self.interface_scatter = bqplot.Scatter(x=x_coords, y=y_coords, names=list(pixel_positions.keys()),
+        self.interface_scatter = bqplot.Scatter(x=x_coords, y=y_coords, names=list(contact_positions.keys()),
                                                 colors=[state_colors['INITIAL']], default_size=100,
                                                 scales={'x': x_scale, 'y': y_scale})
         ax_x = bqplot.Axis(scale=x_scale, grid_lines='none', visible=False)
@@ -49,61 +125,60 @@ class InterfacePlotGUI:
                                            fig_margin={'top': fm, 'bottom': fm, 'left': fm, 'right': fm})
         return interface_frame
 
-    def _update_interface_frame(self, *args, **kwargs):
+    def _update_interface_frame(self, *args, **kwargs) -> None:
         pass
 
-    def _display_interface_frame(self):
+    def _display_interface_frame(self) -> None:
         self._update_interface_frame()
         self.interface_frame.clear_output(wait=True)
         with self.interface_frame:
             IPython.display.display(self.interface_fig)
 
-    def _make_plot_frame(self, height: int):
+    def _make_plot_frame(self, height: int, make_plot: bool = True) -> ipywidgets.Output:
         plot_frame = ipywidgets.Output(layout=ipywidgets.Layout(height=f'{height}px'))
         plot_frame.add_class('plot-frame')
-        self.plot.make_plot()
+        if make_plot:
+            self.plot.make_plot()
         return plot_frame
 
-    def _update_plot_frame(self, *args, **kwargs):
+    def _update_plot_frame(self, *args, **kwargs) -> None:
         pass
 
-    def _display_plot_frame(self):
+    def _display_plot_frame(self) -> None:
         self._update_plot_frame()
         self.plot_frame.clear_output(wait=True)
         with self.plot_frame:
             IPython.display.display(self.plot.figure)
 
 
-class ExperimentGUI(InterfacePlotGUI):
+class ExperimentGUI(_InterfacePlotGUI):
     """
     A graphical user interface for monitoring and controlling an experiment within a Jupyter Notebook.
+
+    :param experiment: The :class:`~cohesivm.experiment.Experiment` which should be monitored.
+    :param plot: A :class:`~cohesivm.plots.DataStreamPlot` object which is compatible with the ``experiment``.
     """
 
     instance = None
+    """:meta private:"""
 
-    def __new__(cls, **kwargs):
+    def __new__(cls, *args, **kwargs) -> ExperimentGUI:
         if cls.instance is None:
             cls.instance = super(ExperimentGUI, cls).__new__(cls)
         return cls.instance
 
-    def __init__(self, experiment: ExperimentABC, plot: DataStreamPlotABC):
-        """Initializes the ExperimentGUI by generating the widgets in the background.
-
-        :param experiment: An instance of the `Experiment` class (or a class derived from `ExperimentABC`).
-        :param plot: An instance of a class which implements the `DataStreamPlotABC` and is compatible with the
-            experiment.
-        """
-        InterfacePlotGUI.__init__(self)
+    def __init__(self, experiment: Experiment, plot: DataStreamPlot) -> None:
+        _InterfacePlotGUI.__init__(self)
         plot.check_compatibility(experiment.measurement.output_type)
         experiment.data_stream = plot.data_stream
         self.experiment = experiment
-        self.current_pixel = None
-        self.preview_pixel = None
+        self.current_contact = None
+        self.preview_contact = None
         self.plot = plot
 
         self.statusbar = self._make_statusbar()
         self.buttons = self._make_buttons()
-        self.interface_frame = self._make_interface_frame(experiment.interface.pixel_positions, 400)
+        self.interface_frame = self._make_interface_frame(experiment.interface.contact_positions, 400)
         self.interface_scatter.on_element_click(self._preview_click)
         self.plot_frame = self._make_plot_frame(438)
         self.widget = self._make_widget()
@@ -112,8 +187,8 @@ class ExperimentGUI(InterfacePlotGUI):
         self.stop_update = True
 
     @staticmethod
-    def _make_statusbar():
-        statusbar = [ipywidgets.HTML(), ipywidgets.HTML()]
+    def _make_statusbar() -> tuple[ipywidgets.HTML, ipywidgets.HTML]:
+        statusbar = (ipywidgets.HTML(), ipywidgets.HTML())
         statusbar[0].style = {
             'font_size': '18px',
         }
@@ -122,19 +197,19 @@ class ExperimentGUI(InterfacePlotGUI):
         }
         return statusbar
 
-    def _update_statusbar(self):
+    def _update_statusbar(self) -> None:
         self.statusbar[0].value = \
             f'State: <span style="font-weight: bold; color: {state_colors[self.experiment.state.name]}">' \
             f'{self.experiment.state.name}</span>'
-        pixel_status = ''
+        contact_status = ''
         if self.experiment.state in [ExperimentState.RUNNING, ExperimentState.ABORTED]:
-            if self.current_pixel is None:
-                pixel_status = f'[PREVIEW: {self.preview_pixel}]'
+            if self.current_contact is None:
+                contact_status = f'[PREVIEW: {self.preview_contact}]'
             else:
-                pixel_status = f'[{self.current_pixel}]'
-        self.statusbar[1].value = f'{self.experiment.measurement.name}: {self.experiment.sample_id} {pixel_status}'
+                contact_status = f'[{self.current_contact}]'
+        self.statusbar[1].value = f'{self.experiment.measurement.name}: {self.experiment.sample_id} {contact_status}'
 
-    def _make_buttons(self):
+    def _make_buttons(self) -> List[ipywidgets.Button]:
         setup_button = ipywidgets.Button(description='Setup', disabled=True, icon='cogs')
         setup_button.add_class('setup-button')
         start_button = ipywidgets.Button(description='Start', disabled=True, icon='play')
@@ -148,16 +223,18 @@ class ExperimentGUI(InterfacePlotGUI):
 
         return [setup_button, start_button, abort_button]
 
-    def _setup_button_click(self, button):
+    def _setup_button_click(self, button) -> None:
         self.experiment.setup()
+        self.preview_contact = None
 
-    def _start_button_click(self, button):
+    def _start_button_click(self, button) -> None:
         self.experiment.start()
+        self.preview_contact = None
 
-    def _abort_button_click(self, button):
+    def _abort_button_click(self, button) -> None:
         self.experiment.abort()
 
-    def _update_buttons(self):
+    def _update_buttons(self) -> None:
         if self.experiment.state in [ExperimentState.INITIAL, ExperimentState.FINISHED, ExperimentState.ABORTED]:
             self.buttons[0].disabled = False
         else:
@@ -171,28 +248,30 @@ class ExperimentGUI(InterfacePlotGUI):
         else:
             self.buttons[2].disabled = True
 
-    def _preview_click(self, event, data):
+    def _preview_click(self, event, data) -> None:
         if self.experiment.state == ExperimentState.RUNNING:
             return
-        pixel = data['data']['name']
-        self.preview_pixel = pixel
+        contact_id = data['data']['name']
+        self.preview_contact = contact_id
         self.plot.clear_plot()
-        self.experiment.preview(pixel)
+        self.experiment.preview(contact_id)
 
-    def _update_interface_frame(self):
+    def _update_interface_frame(self) -> None:
         colors = []
-        for pixel in self.experiment.interface.pixel_ids:
-            if pixel == self.preview_pixel and self.experiment.state == ExperimentState.RUNNING:
+        for contact_id in self.experiment.interface.contact_ids:
+            if contact_id == self.preview_contact and self.experiment.state == ExperimentState.RUNNING:
                 colors.append(state_colors['RUNNING'])
-            elif pixel not in self.experiment.selected_pixels:
+            elif contact_id == self.preview_contact and self.experiment.state == ExperimentState.ABORTED:
+                colors.append(state_colors['ABORTED'])
+            elif contact_id not in self.experiment.selected_contacts:
                 colors.append('black')
-            elif self.experiment.current_pixel_idx == -2:
+            elif self.experiment.current_contact_idx == -2:
                 colors.append(state_colors['INITIAL'])
-            elif self.experiment.current_pixel_idx < self.experiment.selected_pixels.index(pixel):
+            elif self.experiment.current_contact_idx < self.experiment.selected_contacts.index(contact_id):
                 colors.append(state_colors['READY'])
-            elif self.experiment.current_pixel_idx > self.experiment.selected_pixels.index(pixel):
+            elif self.experiment.current_contact_idx > self.experiment.selected_contacts.index(contact_id):
                 colors.append(state_colors['FINISHED'])
-            elif pixel == self.experiment.selected_pixels[self.experiment.current_pixel_idx]:
+            elif contact_id == self.experiment.selected_contacts[self.experiment.current_contact_idx]:
                 if self.experiment.state == ExperimentState.RUNNING:
                     colors.append(state_colors['RUNNING'])
                 if self.experiment.state == ExperimentState.ABORTED:
@@ -203,20 +282,20 @@ class ExperimentGUI(InterfacePlotGUI):
         else:
             self.interface_frame.add_class('interactive-interface')
 
-    def _update_plot_frame(self):
+    def _update_plot_frame(self) -> None:
         if self.experiment.state is ExperimentState.ABORTED:
             return
         if self.experiment.state is not ExperimentState.RUNNING:
             self.plot.clear_plot()
             return
-        if self.experiment.current_pixel_idx < 0:
+        if self.experiment.current_contact_idx < 0:
             pass
-        elif self.current_pixel != self.experiment.selected_pixels[self.experiment.current_pixel_idx]:
-            self.current_pixel = self.experiment.selected_pixels[self.experiment.current_pixel_idx]
+        elif self.current_contact != self.experiment.selected_contacts[self.experiment.current_contact_idx]:
+            self.current_contact = self.experiment.selected_contacts[self.experiment.current_contact_idx]
             self.plot.clear_plot()
         self.plot.update_plot()
 
-    def _make_widget(self):
+    def _make_widget(self) -> ipywidgets.HBox:
         frame_layout = ipywidgets.Layout(border='2px #dddddd solid', border_top='none',
                                          justify_content='center', margin='2px')
         left_body = ipywidgets.VBox([
@@ -234,11 +313,11 @@ class ExperimentGUI(InterfacePlotGUI):
         left_column = ipywidgets.VBox([
             ipywidgets.HTML('Control').add_class('column-heading'),
             left_body
-        ], layout=ipywidgets.Layout(width='400px'))
+        ], layout=ipywidgets.Layout(width='40%'))
         right_column = ipywidgets.VBox([
             ipywidgets.HTML('Plot').add_class('column-heading'),
             right_body
-        ], layout=ipywidgets.Layout(width='585px'))
+        ], layout=ipywidgets.Layout(width='60%'))
         return ipywidgets.HBox([
             ipywidgets.HTML(f"<style>{style}</style>",
                             layout=ipywidgets.Layout(display='none')),
@@ -246,7 +325,7 @@ class ExperimentGUI(InterfacePlotGUI):
             right_column
         ])
 
-    def _update_widget(self):
+    def _update_widget(self) -> None:
         self.stop_update = False
         while not self.stop_update:
             self._update_statusbar()
@@ -254,7 +333,7 @@ class ExperimentGUI(InterfacePlotGUI):
             self._update_interface_frame()
             self._update_plot_frame()
 
-    def display(self):
+    def display(self) -> None:
         """Displays the ExperimentGUI widget and starts the update loop in a separate thread."""
         self.stop_update = True
         time.sleep(1)
@@ -265,45 +344,50 @@ class ExperimentGUI(InterfacePlotGUI):
         self.update_worker.start()
 
 
-class AnalysisGUI(InterfacePlotGUI):
+class AnalysisGUI(_InterfacePlotGUI):
+    """
+    A graphical user interface for plotting measurement data and displaying analysis results within a Jupyter Notebook.
 
-    def __init__(self, analysis: AnalysisABC, plot: PlotABC):
-        InterfacePlotGUI.__init__(self)
+    :param analysis: An :class:`~cohesivm.analysis.Analysis` object which should be displayed.
+    """
+
+    def __init__(self, analysis: Analysis) -> None:
+        _InterfacePlotGUI.__init__(self)
         self.analysis = analysis
-        self.plot = plot
+        self.plot = None
 
-        self.current_pixel = None
+        self.current_contact = None
         self.current_plot = 0
-        self.available_plots = ['Measurement'] + list(self.analysis.plots.keys())
+        self.available_plots = list(self.analysis.plots.keys())
 
-        self.interface_frame = self._make_interface_frame(analysis.pixel_positions, 420)
+        self.interface_frame = self._make_interface_frame(analysis.contact_position_dict, 420)
         self.interface_frame.add_class('interactive-interface')
-        self.interface_scatter.on_element_click(self._select_pixel)
-        self.plot_heading = ipywidgets.HTML('Plot: Measurement')
+        self.interface_scatter.on_element_click(self._select_contact)
+        self.plot_heading = ipywidgets.HTML('Plot')
         self.switch_plot_buttons = self._make_switch_plot_buttons()
-        self.plot_frame = self._make_plot_frame(420)
+        self.plot_frame = self._make_plot_frame(420, False)
         self.results_frame = ipywidgets.HTML()
         self.widget = self._make_widget()
 
-    def _select_pixel(self, event, data):
-        pixel = data['data']['name']
-        self.current_pixel = pixel
+    def _select_contact(self, event, data) -> None:
+        contact_id = data['data']['name']
+        self.current_contact = contact_id
         self._update_plot_frame()
         self._update_results_frame()
         self._update_interface_frame()
 
-    def _update_interface_frame(self):
+    def _update_interface_frame(self) -> None:
         colors = []
-        for pixel in self.analysis.pixel_positions.keys():
-            if pixel not in self.analysis.dataset.keys():
+        for contact_id in self.analysis.contact_position_dict.keys():
+            if contact_id not in self.analysis.data.keys():
                 colors.append('black')
-            elif pixel == self.current_pixel:
+            elif contact_id == self.current_contact:
                 colors.append(state_colors['FINISHED'])
             else:
                 colors.append(state_colors['INITIAL'])
         self.interface_scatter.colors = colors
 
-    def _make_switch_plot_buttons(self):
+    def _make_switch_plot_buttons(self) -> ipywidgets.HBox:
         left_button = ipywidgets.Button(icon='caret-left', disabled=True)
         left_button.value = 'left'
         left_button.on_click(self._switch_plot)
@@ -312,7 +396,7 @@ class AnalysisGUI(InterfacePlotGUI):
         right_button.on_click(self._switch_plot)
         return ipywidgets.HBox([left_button, right_button])
 
-    def _switch_plot(self, button):
+    def _switch_plot(self, button) -> None:
         if button.value == 'left':
             self.current_plot -= 1
         else:
@@ -320,7 +404,7 @@ class AnalysisGUI(InterfacePlotGUI):
         self._update_switch_plot_buttons()
         self._update_plot_frame()
 
-    def _update_switch_plot_buttons(self):
+    def _update_switch_plot_buttons(self) -> None:
         left_button, right_button = self.switch_plot_buttons.children
         if self.current_plot == 0:
             left_button.disabled = True
@@ -331,27 +415,20 @@ class AnalysisGUI(InterfacePlotGUI):
         else:
             right_button.disabled = True
 
-    def _update_plot_frame(self):
+    def _update_plot_frame(self) -> None:
         self.plot_heading.value = f'Plot: {self.available_plots[self.current_plot]}'
-        if self.current_pixel is None:
+        if self.current_contact is None:
             return
-        if self.current_plot == 0:
-            data = self.analysis.dataset[self.current_pixel]
-            self.plot_frame.clear_output(wait=True)
-            with self.plot_frame:
-                self.plot.update_plot(data)
-                IPython.display.display(self.plot.figure)
-        else:
-            figure = self.analysis.plots[self.available_plots[self.current_plot]](self.current_pixel)
-            self.plot_frame.clear_output(wait=True)
-            with self.plot_frame:
-                IPython.display.display(figure)
+        figure = self.analysis.plots[self.available_plots[self.current_plot]](self.current_contact)
+        self.plot_frame.clear_output(wait=True)
+        with self.plot_frame:
+            IPython.display.display(figure)
 
-    def _update_results_frame(self):
+    def _update_results_frame(self) -> None:
         results = []
         for func_name, func in self.analysis.functions.items():
             try:
-                result = func(self.current_pixel)
+                result = func(self.current_contact)
             except Exception as exc:
                 result = type(exc).__name__
             results.append(f'<tr><td style="font-weight:bold;">{func_name}</td><td>{result}</td></tr>')
@@ -360,20 +437,20 @@ class AnalysisGUI(InterfacePlotGUI):
                                    f'<tbody>{"".join(results)}</tbody>' \
                                    f'</table>'
 
-    def _make_widget(self):
+    def _make_widget(self) -> ipywidgets.VBox:
         frame_layout = ipywidgets.Layout(border='2px #dddddd solid', border_top='none',
                                          justify_content='center', margin='2px')
         left_column = ipywidgets.VBox([
             ipywidgets.HTML('Interface').add_class('column-heading'),
             ipywidgets.VBox([self.interface_frame], layout=frame_layout)
-        ], layout=ipywidgets.Layout(width='400px'))
+        ], layout=ipywidgets.Layout(width='40%'))
         right_column = ipywidgets.VBox([
             ipywidgets.HBox([
                 self.plot_heading,
                 self.switch_plot_buttons
             ]).add_class('column-heading'),
             ipywidgets.VBox([self.plot_frame], layout=frame_layout)
-        ], layout=ipywidgets.Layout(width='585px'))
+        ], layout=ipywidgets.Layout(width='60%'))
         widget_top = ipywidgets.HBox([
             ipywidgets.HTML(f"<style>{style}</style>",
                             layout=ipywidgets.Layout(display='none')),
@@ -383,11 +460,11 @@ class AnalysisGUI(InterfacePlotGUI):
         widget = ipywidgets.VBox([
             widget_top,
             self.results_frame
-        ])
+        ], layout=ipywidgets.Layout(width='100%'))
         widget.add_class('analysis-gui')
         return widget
 
-    def display(self):
+    def display(self) -> None:
         """Displays the AnalysisGUI widget."""
         IPython.display.display(self.widget, clear=True)
         self._display_interface_frame()
@@ -395,8 +472,13 @@ class AnalysisGUI(InterfacePlotGUI):
 
 
 class DatabaseGUI:
+    """
+    A graphical user interface for displaying and filtering the contents of a database file within a Jupyter Notebook.
 
-    def __init__(self, database: Database):
+    :param database: The :class:`~cohesivm.database.Database` object which should be displayed.
+    """
+
+    def __init__(self, database: Database) -> None:
         self.database = database
 
         self.toggle = self._make_toggle()
@@ -414,13 +496,13 @@ class DatabaseGUI:
 
         self.timezone = datetime.datetime.now(datetime.timezone.utc).astimezone().tzinfo
 
-    def _make_toggle(self):
+    def _make_toggle(self) -> ipywidgets.ToggleButtons:
         toggle = ipywidgets.ToggleButtons(value=None, options=['Measurements', 'Samples'], icons=['folder']*2)
-        toggle.add_class('dataset-toggle')
+        toggle.add_class('data-toggle')
         toggle.observe(self._toggle_click, 'value')
         return toggle
 
-    def _toggle_click(self, change):
+    def _toggle_click(self, change) -> None:
         self._update_results_frame()
         self.filters_frame.children = []
         icons = ['folder'] * 2
@@ -432,11 +514,11 @@ class DatabaseGUI:
             icons[1] = 'folder-open'
         self.toggle.icons = icons
 
-    def _enable_buttons(self):
+    def _enable_buttons(self) -> None:
         for button in self.buttons_frame.children:
             button.disabled = False
 
-    def _measurements_toggle(self):
+    def _measurements_toggle(self) -> None:
         measurement_buttons = [ipywidgets.Button(description=measurement)
                                for measurement in self.database.get_measurements()]
         for button in measurement_buttons:
@@ -444,7 +526,7 @@ class DatabaseGUI:
             button.on_click(self._measurement_button_click)
         self.buttons_frame.children = measurement_buttons
 
-    def _measurement_button_click(self, button):
+    def _measurement_button_click(self, button) -> None:
         self._enable_buttons()
         button.disabled = True
         measurement = button.description
@@ -493,7 +575,7 @@ class DatabaseGUI:
             self._apply_filters(measurement)
         return func
 
-    def _apply_filters(self, measurement: str):
+    def _apply_filters(self, measurement: str) -> None:
         filters = {}
         for setting, widget in self.filter_widgets.items():
             if widget.disabled:
@@ -511,20 +593,20 @@ class DatabaseGUI:
         results = self.database.filter_by_settings_batch(measurement, filters)
         self._update_results_frame(results)
 
-    def _samples_toggle(self):
+    def _samples_toggle(self) -> None:
         sample_buttons = [ipywidgets.Button(description=sample) for sample in self.database.get_sample_ids()]
         for button in sample_buttons:
             button.add_class('sample-button')
             button.on_click(self._sample_button_click)
         self.buttons_frame.children = sample_buttons
 
-    def _sample_button_click(self, button):
+    def _sample_button_click(self, button) -> None:
         self._enable_buttons()
         button.disabled = True
         results = self.database.filter_by_sample_id(button.description)
         self._update_results_frame(results)
 
-    def _update_results_frame(self, results=None):
+    def _update_results_frame(self, results=None) -> None:
         if results is None:
             self.results_frame.value = ''
             self.results_count.value = ''
@@ -574,7 +656,7 @@ class DatabaseGUI:
             self.results_frame.value = results_table
             self.results_count.value = f'{len(result_rows)} results'
 
-    def _make_widget(self):
+    def _make_widget(self) -> ipywidgets.VBox:
         widget = ipywidgets.VBox([
             ipywidgets.HTML(f'<style>{style}</style>', layout=ipywidgets.Layout(display='none')),
             ipywidgets.HBox([self.toggle, self.results_count],
@@ -586,7 +668,7 @@ class DatabaseGUI:
         widget.add_class('database-gui')
         return widget
 
-    def display(self):
+    def display(self) -> None:
         """Displays the DatabaseGUI widget."""
         IPython.display.display(self.widget, clear=True)
 
@@ -630,7 +712,9 @@ style = f"""
 }}
 
 .interface-frame .output, .interface-frame .output_area, .interface-frame .output_subarea, .interface-frame .bqplot,
-.plot-frame .output, .plot-frame .output_area, .plot-frame .output_subarea {{
+.interface-frame .jp-OutputArea, .interface-frame .jp-OutputArea-child, .interface-frame .jp-OutputArea-output,
+.plot-frame .output, .plot-frame .output_area, .plot-frame .output_subarea,
+.plot-frame .jp-OutputArea, .plot-frame .jp-OutputArea-child, .plot-frame .jp-OutputArea-output {{
     height: 100%;
     overflow: hidden;
 }}
@@ -648,7 +732,10 @@ style = f"""
     transform: scale(1.3);
 }}
 
-.output_area + .output_area {{
+.output_area + .output_area,
+.jp-OutputArea + .jp-OutputArea,
+.jp-OutputArea-child + .jp-OutputArea-child, 
+.jp-OutputArea-output + .jp-OutputArea-output {{
     display: none;
 }}
 
@@ -667,7 +754,8 @@ style = f"""
     width: 170px;
 }}
 
-.widget-button .icon {{
+.widget-button .icon, .widget-toggle-button i {{
+    margin-left: 5px;
     margin-right: 5px;
 }}
 
@@ -789,8 +877,6 @@ style = f"""
     padding: 12px 15px;
     line-height: 1.1;
 }}
-
-
 
 .analysis-gui .results-table th,
 .analysis-gui .results-table td {{

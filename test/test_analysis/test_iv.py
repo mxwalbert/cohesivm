@@ -43,7 +43,7 @@ def test_isc(analysis):
 
 
 def test_jsc(analysis):
-    analysis.areas = {'quadratic': 2.}
+    analysis._areas = {'quadratic': 2.}
     assert analysis.jsc('quadratic').round(3) == analysis.isc('quadratic').round(3) / 2.
 
 
@@ -58,7 +58,7 @@ def test_mpp_i(analysis):
 
 
 def test_mpp_j(analysis):
-    analysis.areas = {'linear': 2.}
+    analysis._areas = {'linear': 2.}
     assert analysis.mpp_j('linear').round(3) == analysis.mpp_i('linear').round(3) / 2
 
 
@@ -68,11 +68,6 @@ def test_ff(analysis):
 
 def test_eff(analysis):
     assert analysis.eff('linear').round(3) == 16.000
-
-
-def test_eff_j(analysis):
-    analysis.areas = {'linear': 2.}
-    assert analysis.eff_j('linear').round(3) == analysis.eff('linear').round(3) / 2
 
 
 def test_rs(analysis):
@@ -87,10 +82,10 @@ def test_rsh(analysis):
 
 def test_hysteresis(analysis):
     analysis_hysteresis = copy.deepcopy(analysis)
-    analysis_hysteresis.hysteresis = True
-    analysis_hysteresis.dataset['hysteresis'] = np.hstack([
-        analysis.dataset['equation'],
-        np.flip(analysis.dataset['hysteresis'])
+    analysis_hysteresis._hysteresis = True
+    analysis_hysteresis.data['hysteresis'] = np.hstack([
+        analysis.data['equation'],
+        np.flip(analysis.data['hysteresis'])
     ])
     assert analysis_hysteresis.voc('hysteresis')[0].round(3) == analysis_hysteresis.voc('hysteresis')[1].round(3)
     assert analysis_hysteresis.voc('hysteresis')[0].round(3) == analysis.voc('equation').round(3)

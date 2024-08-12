@@ -3,12 +3,12 @@ import os
 import time
 import multiprocessing as mp
 from cohesivm import experiment, database, CompatibilityError
-from cohesivm.interfaces import InterfaceType
 from cohesivm.experiment import StateError, ExperimentState
-from cohesivm.devices import DeviceABC
-from cohesivm.channels import VoltmeterChannel
+from cohesivm.devices import Device
+from cohesivm.channels import Voltmeter
+from cohesivm.interfaces import InterfaceType
 from cohesivm.database import Metadata, Dimensions
-from . import DemoDevice, DemoMeasurement, DemoInterface
+from . import DemoInterface, DemoDevice, DemoMeasurement
 
 
 @pytest.fixture
@@ -20,29 +20,33 @@ def db():
 
 class DemoDevice2(DemoDevice):
     def __init__(self):
-        DemoDevice.__init__(self)
+        super().__init__()
         self._channels = []
 
 
 class DemoMeasurement2(DemoMeasurement):
-    _required_channels = [(VoltmeterChannel,)]
+    _required_channels = [(Voltmeter,)]
 
     def __init__(self):
-        DemoMeasurement.__init__(self)
+        super().__init__()
 
 
 class DemoMeasurement3(DemoMeasurement):
 
     def __init__(self):
-        DemoMeasurement.__init__(self)
+        super().__init__()
 
-    def run(self, device: DeviceABC, data_stream: mp.Queue):
+    def run(self, device: Device, data_stream: mp.Queue):
         while True:
             pass
 
 
+class DemoInterfaceType2(InterfaceType):
+    """For testing purposes."""
+
+
 class DemoInterface2(DemoInterface):
-    _interface_type = InterfaceType.Demo2
+    _interface_type = DemoInterfaceType2
 
 
 cases_compatibility_error = [
@@ -53,8 +57,8 @@ cases_compatibility_error = [
 ]
 
 
-@pytest.mark.parametrize("interface,device,measurement,pixel_ids", cases_compatibility_error)
-def test_compatibility_error(db, interface, device, measurement, pixel_ids):
+@pytest.mark.parametrize("interface,device,measurement,contact_ids", cases_compatibility_error)
+def test_compatibility_error(db, interface, device, measurement, contact_ids):
     with pytest.raises(CompatibilityError):
         experiment.Experiment(
             database=db,
@@ -62,7 +66,7 @@ def test_compatibility_error(db, interface, device, measurement, pixel_ids):
             measurement=measurement,
             interface=interface,
             sample_id='Test',
-            selected_pixels=pixel_ids
+            selected_contacts=contact_ids
         )
 
 
@@ -74,7 +78,7 @@ def demo_experiment(db):
         measurement=DemoMeasurement(),
         interface=DemoInterface(),
         sample_id='Test',
-        selected_pixels=['0']
+        selected_contacts=['0']
     )
 
 
@@ -86,7 +90,7 @@ def demo_experiment2(db):
         measurement=DemoMeasurement3(),
         interface=DemoInterface(),
         sample_id='Test',
-        selected_pixels=['0']
+        selected_contacts=['0']
     )
 
 
@@ -100,10 +104,10 @@ class TestExperiment:
             channels=demo_experiment.device.channels_names,
             channels_settings=demo_experiment.device.channels_settings,
             interface=demo_experiment.interface.name,
-            sample_dimensions=str(Dimensions.Point()),
-            pixel_ids=demo_experiment.interface.pixel_ids,
-            pixel_positions=list(demo_experiment.interface.pixel_positions.values()),
-            pixel_dimensions=[str(Dimensions.Point()) for _ in demo_experiment.interface.pixel_ids]
+            interface_dimensions=str(Dimensions.Point()),
+            contact_ids=demo_experiment.interface.contact_ids,
+            contact_positions=list(demo_experiment.interface.contact_positions.values()),
+            pixel_dimensions=[str(Dimensions.Point()) for _ in demo_experiment.interface.contact_ids]
         )
 
         for state in [ExperimentState.READY, ExperimentState.RUNNING]:

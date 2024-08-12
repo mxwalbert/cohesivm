@@ -1,19 +1,17 @@
-from __future__ import annotations
 import pytest
 import numpy as np
 from decimal import Decimal
 from typing import List
 from cohesivm import config
-from cohesivm.devices.agilent import Agilent4284ALCRChannel
-from cohesivm.devices.ossila import OssilaX200, OssilaX200SMUChannel, OssilaX200VsenseChannel
+from cohesivm.devices.agilent.Agilent4284A import LCRChannel
+from cohesivm.devices.ossila.OssilaX200 import OssilaX200, VoltageSMUChannel, VoltmeterChannel
 
 
-smu1 = OssilaX200SMUChannel()
-smu2 = OssilaX200SMUChannel('smu2')
-smu3 = OssilaX200SMUChannel()
-smu3._identifier = 'smu3'
-vsense1 = OssilaX200VsenseChannel()
-vsense2 = OssilaX200VsenseChannel('vsense2')
+smu1 = VoltageSMUChannel()
+smu2 = VoltageSMUChannel('smu2')
+smu3 = VoltageSMUChannel()
+vsense1 = VoltmeterChannel()
+vsense2 = VoltmeterChannel('vsense2')
 
 
 class TestConfiguration:
@@ -29,7 +27,7 @@ class TestConfiguration:
     @pytest.mark.parametrize("identifier, s_filter, s_osr, s_range, expected", cases_smu_channel_exceptions)
     def test_smu_channel_exceptions(self, identifier, s_filter, s_osr, s_range, expected):
         with pytest.raises(expected):
-            OssilaX200SMUChannel(
+            VoltageSMUChannel(
                 identifier=identifier,
                 s_filter=s_filter,
                 s_osr=s_osr,
@@ -44,7 +42,7 @@ class TestConfiguration:
     @pytest.mark.parametrize("identifier, s_osr, expected", cases_vsense_channel_exceptions)
     def test_vsense_channel_exceptions(self, identifier, s_osr, expected):
         with pytest.raises(expected):
-            OssilaX200VsenseChannel(
+            VoltmeterChannel(
                 identifier=identifier,
                 s_osr=s_osr
             )
@@ -57,7 +55,7 @@ class TestConfiguration:
         # too many channels
         ([smu1, smu2, vsense1, vsense2, smu3], ValueError),
         # not OssilaX200Channel
-        ([Agilent4284ALCRChannel()], TypeError)
+        ([LCRChannel()], TypeError)
     ]
 
     @pytest.mark.parametrize("channels, expected", cases_device_exceptions)
@@ -157,8 +155,9 @@ class DemoOssilaX200(OssilaX200):
         }
 
 
+@pytest.mark.hardware('ossila_x200')
 @pytest.mark.incremental
-class TestOssilaDeviceAndChannels:
+class TestOssilaX200DeviceAndChannels:
     """The tests within this class require a connected device."""
 
     try:

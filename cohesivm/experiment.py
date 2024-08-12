@@ -1,20 +1,20 @@
-"""Module containing the Experiment class which is responsible for packaging the multiple components of an experiment
-together and handling the worker process which executes the measurements in the background."""
+"""This module contains the :class:`Experiment` class which is responsible for packaging the multiple components of an
+experiment together. Further, it handles the worker process which executes the measurements in the background."""
 from __future__ import annotations
 import time
 import multiprocessing as mp
 from enum import Enum
-from typing import List
-from abc import ABC, abstractmethod
-from . import CompatibilityError
-from .interfaces import InterfaceABC
-from .measurements import MeasurementABC
-from .devices import DeviceABC
-from .database import Database, Metadata
-from .data_stream import FakeQueue
+from typing import List, Union
+from cohesivm import CompatibilityError
+from cohesivm.interfaces import Interface
+from cohesivm.measurements import Measurement
+from cohesivm.devices import Device
+from cohesivm.database import Database, Metadata
+from cohesivm.data_stream import FakeQueue
 
 
 class ExperimentState(Enum):
+    """An Enumeration of the different states an :class:`Experiment` can be in."""
     INITIAL = 1
     READY = 2
     RUNNING = 3
@@ -23,31 +23,51 @@ class ExperimentState(Enum):
 
 
 class StateError(Exception):
-    """Raised by an ``ExperimentABC`` class if a method is not available in the current ``ExperimentState``."""
-    pass
+    """Raised by an :class:`Experiment` if a method is not valid in the current :class:`ExperimentState`."""
 
 
-class ExperimentABC(ABC):
-    """Main class which packages all parts that must be defined for running an experiment using the Statemachine design
-    pattern. A child class should implement a compatibility check, the data management and worker handling."""
+class Experiment:
+    """A statemachine which packages the components of an experiment (:class:`~cohesivm.devices.Device`,
+    :class:`~cohesivm.interfaces.Interface` and :class:`~cohesivm.measurements.Measurement`), checks their
+    compatibility, executes the measurements in a separate process and keeps track of the progress. Creates during
+    initialization a new :obj:`multiprocessing.Value` which holds the current state of the experiment.
 
-    def __init__(self, state: mp.Value, database: Database, device: DeviceABC, measurement: MeasurementABC,
-                 interface: InterfaceABC, sample_id: str, selected_pixels: List[str], data_stream: mp.Queue):
+    :param database: The database where the data is stored.
+    :param device: The measurement device which is used to run the experiment.
+    :param interface: The contacting hardware which establishes the electronic connection on the sample.
+    :param measurement: The routine which is run for each contact on the interface.
+    :param sample_id: The string identifier of the sample which should be unique in the database.
+    :param selected_contacts: List of selected contact ids which should be measured. The default are all available
+        contacts on the :attr:`interface`.
+    :param data_stream: A :class:`multiprocessing.Queue`-like object where the measurement results can be sent to,
+        e.g., for real-time plotting of the measurement.
+    :raises ~cohesivm.CompatibilityError: If the provided components are not compatible with each other.
+    """
+
+    def __init__(self, database: Database, device: Device, measurement: Measurement, interface: Interface,
+                 sample_id: str, selected_contacts: List[str] = None, data_stream: mp.Queue = None) -> None:
+        state = mp.Value('i', ExperimentState.INITIAL.value)
+        if selected_contacts is None:
+            selected_contacts = interface.contact_ids
+        if data_stream is None:
+            data_stream = FakeQueue()
         self.__state = state
         self._database = database
         self._device = device
         self._measurement = measurement
         self._interface = interface
         self._sample_id = sample_id
-        self._selected_pixels = selected_pixels
-        self._current_pixel_idx = None
+        self._selected_contacts = selected_contacts
+        self._current_contact_idx = None
         self._data_stream = data_stream
         self._dataset = None
         self._process = None
+        self._check_compatibility()
+        self._current_contact_idx = mp.Value('i', -2)
 
     @property
     def state(self) -> ExperimentState:
-        """The current state of the experiment stored in a ``multiprocessing.Value``."""
+        """The current state of the experiment stored in a :obj:`multiprocessing.Value`."""
         return ExperimentState(self._state.value)
 
     @property
@@ -55,27 +75,27 @@ class ExperimentABC(ABC):
         return self.__state
 
     @_state.setter
-    def _state(self, new_value: ExperimentState):
+    def _state(self, new_value: ExperimentState) -> None:
         self._state.value = new_value.value
 
     @property
     def database(self) -> Database:
-        """An instance of the ``Database`` class."""
+        """The database where the data is stored."""
         return self._database
 
     @property
-    def device(self) -> DeviceABC:
-        """An instance of a class which inherits the ``DeviceABC``."""
+    def device(self) -> Device:
+        """The measurement device which is used to run the experiment."""
         return self._device
 
     @property
-    def measurement(self) -> MeasurementABC:
-        """An instance of a class which inherits the ``MeasurementABC``."""
+    def measurement(self) -> Measurement:
+        """The routine which is run for each contact on the interface."""
         return self._measurement
 
     @property
-    def interface(self) -> InterfaceABC:
-        """An instance of a class which inherits the ``InterfaceABC``."""
+    def interface(self) -> Interface:
+        """The contacting hardware which establishes the electronic connection on the sample."""
         return self._interface
 
     @property
@@ -84,30 +104,32 @@ class ExperimentABC(ABC):
         return self._sample_id
 
     @property
-    def selected_pixels(self) -> List[str]:
-        """List of selected pixel ids which should be measured. The default are all available pixels on the
-        `interface`."""
-        return self._selected_pixels
+    def selected_contacts(self) -> List[str]:
+        """List of selected contact ids which should be measured. The default is all available contacts on the
+        :attr:`interface`."""
+        return self._selected_contacts
 
     @property
-    def current_pixel_idx(self) -> int | None:
-        """List index of the currently measured pixel from the `selected_pixels` property. Stored as
-        ``multiprocessing.Value`` while the `state` property is ``ExperimentState.RUNNING``."""
-        return None if self._current_pixel_idx is None else self._current_pixel_idx.value
+    def current_contact_idx(self) -> Union[int, None]:
+        """List index of the currently measured contact from the :attr:`selected_contacts`. Stored as
+        :obj:`multiprocessing.Value` while the :attr:`state` is :attr:`~ExperimentState.RUNNING`."""
+        return None if self._current_contact_idx is None else self._current_contact_idx.value
 
     @property
     def data_stream(self) -> mp.Queue:
-        """A queue-like object where the measurement results can be sent to, e.g., for real-time plotting of the
-        measurement."""
+        """A :class:`multiprocessing.Queue`-like object where the measurement results can be sent to,
+        e.g., for real-time plotting of the measurement."""
         return self._data_stream
 
     @data_stream.setter
-    def data_stream(self, new_value: mp.Queue):
+    def data_stream(self, new_value: mp.Queue) -> None:
+        """A :class:`multiprocessing.Queue`-like object where the measurement results can be sent to, e.g., for
+        real-time plotting of the measurement."""
         self._data_stream = new_value
 
     @property
     def dataset(self) -> str:
-        """The dataset of the dataset path in the database which should be obtained from the dataset initialization."""
+        """The dataset path in the database which should be obtained from the dataset initialization."""
         return self._dataset
 
     @property
@@ -115,85 +137,11 @@ class ExperimentABC(ABC):
         """The process which runs the measurements in the background."""
         return self._process
 
-    @abstractmethod
-    def _check_compatibility(self):
-        """This method should be run during initialization of the object and check if the `measurement`, `device` and
-        `interface` are compatible."""
-        pass
+    def _check_contact_compatibility(self, contact_id: str) -> None:
+        if contact_id not in self.interface.contact_ids:
+            raise CompatibilityError(f"The selected contact {contact_id} is not available on the interface!")
 
-    @abstractmethod
-    def preview(self, pixel: str):
-        """Starts a preview measurement on the specified pixel which is executed by a separate worker process running
-        the `_execute_preview` method. Changes the `state` property to ``ExperimentState.RUNNING``."""
-        pass
-
-    @abstractmethod
-    def _execute_preview(self, pixel: str, previous_state: ExperimentState):
-        """Runs a preview measurement on the specified pixel and sends the data to the `data_stream` but does not store
-        it in the database. Resets the state to the previous one if completed."""
-        pass
-
-    @abstractmethod
-    def setup(self):
-        """Generates the ``Metadata`` object and initializes the dataset in the database. Populates the `dataset`
-        property. Changes the `state` property to ``ExperimentState.READY``."""
-        pass
-
-    @abstractmethod
-    def start(self):
-        """Starts the experiment which is executed by a separate worker process running the `_execute` method. Changes
-        the `state` property to ``ExperimentState.RUNNING``."""
-        pass
-
-    @abstractmethod
-    def _execute(self):
-        """Selects the pixel on the interface, generates/updates the `current_pixel` property  which is a
-        ``multiprocessing.Value``, runs the measurement and stores the result in the database. Changes the `state`
-        property to ``ExperimentState.FINISHED`` after completion."""
-
-    @abstractmethod
-    def abort(self):
-        """If the experiment is not running but setup, the dataset is deleted from the database and the `state`
-        property is changed to ``ExperimentState.INITIAL``. Otherwise, terminates the ``multiprocessing.Process`` and
-        changes the `state` property to ``ExperimentState.ABORTED``."""
-        pass
-
-
-class Experiment(ExperimentABC):
-    """A statemachine which packages the components of an experiment (device, measurement and interface), checks
-    their compatibility, executes the measurements in a separate process and keeps track of the progress."""
-
-    def __init__(self, database: Database, device: DeviceABC, measurement: MeasurementABC, interface: InterfaceABC,
-                 sample_id: str, selected_pixels: List[str] = None, data_stream: mp.Queue = None):
-        """Initializes the experiment and creates a new multiprocessing.Value which holds the current state.
-
-        :param database: An instance of the Database class.
-        :param device: An instance of a class which inherits the DeviceABC.
-        :param measurement: An instance of a class which inherits the MeasurementABC.
-        :param interface: An instance of a class which inherits the InterfaceABC.
-        :param sample_id: The string identifier of the sample which should be unique in the database.
-        :param selected_pixels: List of selected pixel ids which should be measured. The default are all available
-            pixels on the `interface`.
-        :param data_stream: A queue-like object where the measurement results can be sent to, e.g., for real-time
-            plotting of the measurement.
-        :raises CompatibilityError: If the provided components (device, measurement and interface) are not compatible
-            with each other.
-        """
-        state = mp.Value('i', ExperimentState.INITIAL.value)
-        if selected_pixels is None:
-            selected_pixels = interface.pixel_ids
-        if data_stream is None:
-            data_stream = FakeQueue()
-        ExperimentABC.__init__(self, state, database, device, measurement, interface, sample_id, selected_pixels,
-                               data_stream)
-        self._check_compatibility()
-        self._current_pixel_idx = mp.Value('i', -2)
-
-    def _check_pixel_compatibility(self, pixel: str):
-        if pixel not in self.interface.pixel_ids:
-            raise CompatibilityError(f"The selected pixel {pixel} is not available on the interface!")
-
-    def _check_compatibility(self):
+    def _check_compatibility(self) -> None:
         if self.interface.interface_type is not self.measurement.interface_type:
             raise CompatibilityError(f"The interface (InterfaceType: {self.interface.interface_type}) and the "
                                      f"measurement (InterfaceType: {self.measurement.interface_type}) are not "
@@ -207,36 +155,53 @@ class Experiment(ExperimentABC):
                 raise CompatibilityError(f"The measurement requires one of these channels on index {i}: "
                                          f"{self.measurement.required_channels[i]} but on the device the channel on "
                                          f"index {i} is a {self.device.channels[i].__class__.__name__}.")
-        for pixel in self.selected_pixels:
-            self._check_pixel_compatibility(pixel)
+        for contact_id in self.selected_contacts:
+            self._check_contact_compatibility(contact_id)
 
-    def preview(self, pixel: str):
+    def preview(self, contact_id: str) -> None:
+        """Starts a preview measurement on the specified contact which is executed by a separate worker process. Sends
+        the data to the :attr:`data_stream` but does not store it in the database.
+
+        Changes the :attr:`state` property to :attr:`~ExperimentState.RUNNING`. Resets the :attr:`state` to the
+        previous one if completed.
+
+        :param contact_id: The id of the contact for which the preview measurement should be run.
+        :raises StateError: If the :attr:`state` is :attr:`~ExperimentState.RUNNING`.
+        """
         state_messages = {
             ExperimentState.RUNNING: "The experiment is already running!"
         }
         if self.state is ExperimentState.RUNNING:
             raise StateError(f"{state_messages[self.state]} Current state: {self.state}.")
-        self._check_pixel_compatibility(pixel)
+        self._check_contact_compatibility(contact_id)
         previous_state = self.state
-        self._current_pixel_idx.value = -2
+        self._current_contact_idx.value = -2
         self._state = ExperimentState.RUNNING
         self._process = mp.Process(target=self._execute_preview,
-                                   kwargs={'pixel': pixel, 'previous_state': previous_state})
+                                   kwargs={'contact_id': contact_id, 'previous_state': previous_state})
         self.process.start()
 
-    def _execute_preview(self, pixel: str, previous_state: ExperimentState):
+    def _execute_preview(self, contact_id: str, previous_state: ExperimentState) -> None:
         if self.state is not ExperimentState.RUNNING:
             raise StateError(f"The preview must be started before it can be executed! Current state: {self.state}.")
-        self.interface.select_pixel(pixel)
+        self.interface.select_contact(contact_id)
         self.measurement.run(self.device, self.data_stream)
         if previous_state is ExperimentState.READY:
-            self._current_pixel_idx.value = -1
+            self._current_contact_idx.value = -1
             self._state = ExperimentState.READY
         else:
-            self._current_pixel_idx.value = -2
+            self._current_contact_idx.value = -2
             self._state = ExperimentState.INITIAL
 
-    def setup(self):
+    def setup(self) -> None:
+        """Generates the :class:`~cohesivm.database.Metadata` object and initializes the dataset in the database.
+        Populates the :attr:`dataset`.
+
+        Changes the :attr:`state` to :attr:`~ExperimentState.READY`.
+
+        :raises StateError: If the :attr:`state` is none of :attr:`~ExperimentState.INITIAL`,
+            :attr:`~ExperimentState.FINISHED` or :attr:`~ExperimentState.ABORTED`.
+        """
         state_messages = {
             ExperimentState.READY: "The experiment is already set up!",
             ExperimentState.RUNNING: "The experiment is already running!"
@@ -251,16 +216,25 @@ class Experiment(ExperimentABC):
             channels=self.device.channels_names,
             channels_settings=self.device.channels_settings,
             interface=self.interface.name,
-            sample_dimensions=str(self.interface.sample_dimensions),
-            pixel_ids=self.interface.pixel_ids,
-            pixel_positions=list(self.interface.pixel_positions.values()),
-            pixel_dimensions=[str(pixel_dimension) for pixel_dimension in self.interface.pixel_dimensions.values()]
+            interface_dimensions=str(self.interface.interface_dimensions),
+            contact_ids=self.interface.contact_ids,
+            contact_positions=list(self.interface.contact_positions.values()),
+            pixel_dimensions=[str(contact_dimension) for contact_dimension in self.interface.pixel_dimensions.values()]
         )
-        self._current_pixel_idx.value = -1
+        self._current_contact_idx.value = -1
         self._dataset = self.database.initialize_dataset(metadata)
         self._state = ExperimentState.READY
 
-    def start(self):
+    def start(self) -> None:
+        """Starts the experiment which is executed by a separate worker process. Selects the contact on the interface,
+        generates/updates the :attr:`current_contact_idx` which is a :obj:`multiprocessing.Value`, runs the measurement
+        and stores the result in the database.
+
+        Changes the :attr:`state` to :attr:`~ExperimentState.RUNNING` while running. Changes the :attr:`state` to
+        :attr:`~ExperimentState.FINISHED` after completion.
+
+        :raises StateError: If the :attr:`state` is not :attr:`~ExperimentState.READY`.
+        """
         state_messages = {
             ExperimentState.INITIAL: "The experiment must be setup before it can be started!",
             ExperimentState.RUNNING: "The experiment is already running!",
@@ -273,7 +247,7 @@ class Experiment(ExperimentABC):
         self._process = mp.Process(target=self._execute)
         self.process.start()
 
-    def _execute(self):
+    def _execute(self) -> None:
         state_messages = {
             ExperimentState.INITIAL: "The experiment must be setup before it can be stared!",
             ExperimentState.READY: "The experiment must be started before it can be executed!",
@@ -283,16 +257,32 @@ class Experiment(ExperimentABC):
         if self.state is not ExperimentState.RUNNING:
             raise StateError(f"{state_messages[self.state]} Current state: {self.state}.")
 
-        for pixel in self.selected_pixels:
-            self._current_pixel_idx.value = self.current_pixel_idx + 1
-            self.interface.select_pixel(pixel)
+        for contact_id in self.selected_contacts:
+            self._current_contact_idx.value = self.current_contact_idx + 1
+            self.interface.select_contact(contact_id)
             time.sleep(0.5)
             data = self.measurement.run(self.device, self.data_stream)
-            self.database.save_data(data, self.dataset, pixel)
-        self._current_pixel_idx.value = self.current_pixel_idx + 1
+            self.database.save_data(data, self.dataset, contact_id)
+        self._current_contact_idx.value = self.current_contact_idx + 1
         self._state = ExperimentState.FINISHED
 
-    def abort(self):
+    def quickstart(self) -> None:
+        """Executes the :meth:`setup` and :meth:`start` to directly run the experiment.
+
+        :raises StateError: If the :attr:`state` is none of :attr:`~ExperimentState.INITIAL`,
+            :attr:`~ExperimentState.FINISHED` or :attr:`~ExperimentState.ABORTED`.
+        """
+        self.setup()
+        self.start()
+
+    def abort(self) -> None:
+        """If the experiment is not running but setup, the dataset is deleted from the database and the :attr:`state`
+        is changed to :attr:`~ExperimentState.INITIAL`. Otherwise, terminates the :class:`multiprocessing.Process`
+        and changes the :attr:`state` to :attr:`~ExperimentState.ABORTED`.
+
+        :raises StateError: If the :attr:`state` is neither of :attr:`~ExperimentState.READY` nor
+            :attr:`~ExperimentState.RUNNING`.
+        """
         state_messages = {
             ExperimentState.INITIAL: "The experiment is not setup or running!",
             ExperimentState.FINISHED: "The experiment is already finished!",
@@ -301,7 +291,7 @@ class Experiment(ExperimentABC):
         if self.state not in [ExperimentState.READY, ExperimentState.RUNNING]:
             raise StateError(f"{state_messages[self.state]} Current state: {self.state}.")
         if self.state == ExperimentState.READY:
-            self._current_pixel_idx.value = -2
+            self._current_contact_idx.value = -2
             if self._dataset is not None:
                 self.database.delete_dataset(self._dataset)
                 self._dataset = None

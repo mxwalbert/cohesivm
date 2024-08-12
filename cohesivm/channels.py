@@ -1,21 +1,34 @@
-"""Module containing the channel abstract base classes which provide the templates of methods to implement."""
+"""This module contains the :class:`Channel` Abstract Base Class which should be inherited by device channels. The main
+responsibility is to execute actions on the physical device channels for which the device
+:attr:`~cohesivm.channels.Channel.connection` is stored.
+
+Furthermore, all possible channel methods are defined in the :class:`Channel` in order for a
+:class:`~cohesivm.measurements.Measurement` to recognize them. Trait classes, e.g., :class:`Voltmeter`, will inherit
+these methods and set the ones that must be implemented abstract. Then they can be used to be implemented in a device
+module and for the compatibility check of the :class:`~cohesivm.experiment.Experiment`."""
 from __future__ import annotations
 from abc import ABC, abstractmethod
-from typing import Tuple, Any, TypeVar
-from .database import database_dict_type
+from typing import Tuple, Any, TypeVar, Union
+from cohesivm.database import DatabaseDict
 
 
-TChannelABC = TypeVar('TChannelABC', bound='ChannelABC')
+TChannel = TypeVar('TChannel', bound='Channel')
 
 
-class ChannelABC(ABC):
+class Channel(ABC):
     """Contains the properties and methods to operate a physical device channel. The implementation of a child class
-    must define the property getter and setter which are used to configure the channel. Further, a channel class
-    inherits a traits class which contains the abstract methods that must be implemented."""
+    must define the :meth:`get_property` and :meth:`set_property` methods which are used to configure the channel.
+    Practically, the child class will inherit a trait class (child class of this class) which additionally defines the
+    specific methods which must be implemented.
+
+    :param identifier: String identifier of the channel.
+    :param settings: Dictionary of channel settings."""
     @abstractmethod
-    def __init__(self, identifier: str = None, settings: database_dict_type = None):
+    def __init__(self, identifier: str = None, settings: DatabaseDict = None) -> None:
         self._identifier = identifier
-        self._settings = {} if settings is None else settings
+        if settings is None or len(settings) == 0:
+            settings = {'default': 0}
+        self._settings = dict(sorted(settings.items()))
         self._connection = None
         self._check_settings()
 
@@ -25,40 +38,49 @@ class ChannelABC(ABC):
         return self._identifier
 
     @property
-    def settings(self) -> database_dict_type:
+    def settings(self) -> DatabaseDict:
         """Dictionary of channel settings."""
-        return self._settings if len(self._settings) > 0 else {'default': 0}
+        return self._settings
 
     @property
-    def connection(self) -> Any | None:
-        """Holds the device reference while a connection is established through using the `Device.connect`
-        contextmanager."""
+    def connection(self) -> Union[Any, None]:
+        """Holds the resource of the device connection while a connection is established through using
+        the :meth:`~cohesivm.devices.Device.connect` contextmanager."""
+        if self._connection is None:
+            raise RuntimeError('A device connection must be established in order to communicate with the channel!')
         return self._connection
 
     @abstractmethod
-    def set_property(self, name: str, value: Any):
-        """Sets a property/device-setting to the provided value."""
+    def set_property(self, name: str, value: Any) -> None:
+        """Sets a property/device-setting to the provided value.
+
+        :param name: The name of the property/device-setting to be set.
+        :param value: The value to which the property/device-setting should be set.
+        """
 
     @abstractmethod
     def get_property(self, name: str) -> Any:
-        """Retrieves the current value of a property/device-setting."""
+        """Retrieves the current value of a property/device-setting.
+
+        :param name: The name of the property/device-setting to get.
+        :returns: The value of the property/device-setting.
+        """
 
     @abstractmethod
-    def _check_settings(self):
-        """Validates the values which are stored in the `settings` dictionary before they are transferred to the
-        device."""
+    def _check_settings(self) -> None:
+        """Validates the values in the `settings` dictionary before they are applied on the device."""
 
-    def apply_settings(self):
+    def apply_settings(self) -> None:
         """Applies the settings."""
         for name, value in self._settings.items():
             self.set_property(name, value)
 
-    def change_setting(self, setting, value):
-        """Modifies the `_settings` property and overwrites the settings on the device.
+    def change_setting(self, setting, value) -> None:
+        """Modifies the :attr:`settings` and overwrites the settings on the device.
 
-        :param setting: String key of the setting in the `_settings' property.
+        :param setting: String key of the setting in the :attr:`settings`.
         :param value: New value of the setting.
-        :raises KeyError: If `setting` is not a valid setting identifier string.
+        :raises KeyError: If ``setting`` is not a valid setting identifier string.
         """
         if setting not in self._settings.keys():
             raise KeyError(f"'{setting}' is not a valid setting identifier string. "
@@ -73,11 +95,11 @@ class ChannelABC(ABC):
         self.apply_settings()
 
     @abstractmethod
-    def enable(self):
+    def enable(self) -> None:
         """Enables the channel. Must be executed before any channel method can be run."""
 
     @abstractmethod
-    def disable(self):
+    def disable(self) -> None:
         """Disables the channel."""
 
     def measure_voltage(self) -> float:
@@ -85,24 +107,28 @@ class ChannelABC(ABC):
 
         :returns: Measurement result in V.
         """
+        raise NotImplementedError
 
     def measure_current(self) -> float:
         """Measures the current.
 
         :returns: Measurement result in A.
         """
+        raise NotImplementedError
 
-    def source_voltage(self, voltage: float):
+    def source_voltage(self, voltage: float) -> None:
         """Sets the DC output voltage to the defined value.
 
         :param voltage: Output voltage of the DC power source in V.
         """
+        raise NotImplementedError
 
-    def source_current(self, current: float):
+    def source_current(self, current: float) -> None:
         """Sets the DC output current to the defined value.
 
         :param current: Output current of the DC power source in A.
         """
+        raise NotImplementedError
 
     def source_voltage_and_measure(self, voltage: float) -> Tuple[float, float]:
         """Sets the DC output voltage to the defined value and measures the current.
@@ -110,16 +136,15 @@ class ChannelABC(ABC):
         :param voltage: Output voltage of the power source in V.
         :returns: Measurement result: (voltage (V), current (A)).
         """
+        raise NotImplementedError
 
     def source_current_and_measure(self, current: float) -> Tuple[float, float]:
         """Sets the DC output current to the defined value and measures the voltage.
 
-        :param current: Output current of the power source in A.
+        :param current: Output current of the current source in A.
         :returns: Measurement result: (current (A), voltage (V)).
         """
-
-    def use_hw_sweep(self) -> bool:
-        """Flags whether the built-in hardware sweep should be used for the measurement."""
+        raise NotImplementedError
 
     def sweep_voltage_and_measure(self, start_voltage: float, end_voltage: float, voltage_step: float, hysteresis: bool
                                   ) -> list[tuple[float, float]]:
@@ -132,61 +157,38 @@ class ChannelABC(ABC):
             the initial measurement.
         :returns: Measurement results: [(voltage1 (V), current1 (A)), (voltage2 (V), current2 (A)), ...]
         """
+        raise NotImplementedError
 
-    def set_oscillator_frequency(self, frequency: float):
+    def set_oscillator_frequency(self, frequency: float) -> None:
         """Sets the AC frequency of the oscillator to the defined value.
 
         :param frequency: Oscillator frequency in Hz.
         """
+        raise NotImplementedError
 
-    def set_oscillator_voltage(self, voltage: float):
+    def set_oscillator_voltage(self, voltage: float) -> None:
         """Sets the AC voltage of the oscillator to the defined value.
 
         :param voltage: Oscillator voltage level in V.
         """
+        raise NotImplementedError
 
-    def set_oscillator_current(self, current: float):
+    def set_oscillator_current(self, current: float) -> None:
         """Sets the AC current of the oscillator to the defined value.
 
         :param current: Oscillator current level in A.
         """
+        raise NotImplementedError
 
     def measure_impedance(self) -> Tuple[float, float]:
         """Performs an impedance measurement and returns the magnitude and phase angle of the complex impedance vector.
 
         :returns: Measurement result as tuple: (magnitude (1), phase (deg))
         """
+        raise NotImplementedError
 
 
-class LCRMeter(ChannelABC):
-    """Enables the measurement of the inductance (L), capacitance (C), and resistance (R) of an electronic component."""
-
-    @abstractmethod
-    def source_voltage(self, voltage: float):
-        pass
-
-    @abstractmethod
-    def source_current(self, current: float):
-        pass
-
-    @abstractmethod
-    def set_oscillator_frequency(self, frequency: float):
-        pass
-
-    @abstractmethod
-    def set_oscillator_voltage(self, voltage: float):
-        pass
-
-    @abstractmethod
-    def set_oscillator_current(self, current: float):
-        pass
-
-    @abstractmethod
-    def measure_impedance(self) -> Tuple[float, float]:
-        pass
-
-
-class Voltmeter(ChannelABC):
+class Voltmeter(Channel):
     """Measures the electric potential difference between two points in a circuit."""
 
     @abstractmethod
@@ -194,7 +196,7 @@ class Voltmeter(ChannelABC):
         pass
 
 
-class Amperemeter(ChannelABC):
+class Amperemeter(Channel):
     """Measures the current flowing through a circuit."""
 
     @abstractmethod
@@ -202,15 +204,23 @@ class Amperemeter(ChannelABC):
         pass
 
 
-class VoltageSource(ChannelABC):
+class VoltageSource(Channel):
     """Supplies a constant DC voltage."""
 
     @abstractmethod
-    def source_voltage(self, voltage: float):
+    def source_voltage(self, voltage: float) -> None:
         pass
 
 
-class VoltageSMU(ChannelABC):
+class CurrentSource(Channel):
+    """Supplies a constant DC current."""
+
+    @abstractmethod
+    def source_current(self, current: float) -> None:
+        pass
+
+
+class VoltageSMU(Channel):
     """Combines the functions of a voltage source and current measurement device."""
 
     @abstractmethod
@@ -218,15 +228,46 @@ class VoltageSMU(ChannelABC):
         pass
 
 
-class SweepVoltageSMU(ChannelABC):
-    """Implements hardware sweep capabilities of a voltage SMU channel."""
+class CurrentSMU(Channel):
+    """Combines the functions of a current source and voltage measurement device."""
 
-    @property
     @abstractmethod
-    def use_hw_sweep(self) -> bool:
+    def source_current_and_measure(self, current: float) -> Tuple[float, float]:
         pass
+
+
+class SweepVoltageSMU(Channel):
+    """Implements hardware sweep capabilities of a voltage SMU channel."""
 
     @abstractmethod
     def sweep_voltage_and_measure(self, start_voltage: float, end_voltage: float, voltage_step: float, hysteresis: bool
                                   ) -> list[tuple[float, float]]:
+        pass
+
+
+class LCRMeter(Channel):
+    """Enables the measurement of the inductance (L), capacitance (C), and resistance (R) of an electronic component."""
+
+    @abstractmethod
+    def source_voltage(self, voltage: float) -> None:
+        pass
+
+    @abstractmethod
+    def source_current(self, current: float) -> None:
+        pass
+
+    @abstractmethod
+    def set_oscillator_frequency(self, frequency: float):
+        pass
+
+    @abstractmethod
+    def set_oscillator_voltage(self, voltage: float) -> None:
+        pass
+
+    @abstractmethod
+    def set_oscillator_current(self, current: float) -> None:
+        pass
+
+    @abstractmethod
+    def measure_impedance(self) -> Tuple[float, float]:
         pass

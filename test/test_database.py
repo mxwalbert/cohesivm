@@ -16,9 +16,9 @@ metadata_dict = {
     'channels': ['TestChannel1', 'TestChannel2'],
     'channels_settings': [{'setting1': 1, 'setting2': 2}, {'setting3': 2., 'setting4': (3, 4)}],
     'interface': 'TestInterface',
-    'sample_dimensions': str(Dimensions.Point()),
-    'pixel_ids': ['0'],
-    'pixel_positions': [(0, 0)],
+    'interface_dimensions': str(Dimensions.Point()),
+    'contact_ids': ['0'],
+    'contact_positions': [(0, 0)],
     'pixel_dimensions': [str(Dimensions.Point())]
 }
 
@@ -56,12 +56,12 @@ def test_initialize_dataset(db: Database, metadata: Metadata, dataset: str):
 
 def test_save_and_load_data(db: Database, dataset: str):
     a = np.ones(shape=(100,), dtype=[('A', float), ('B', float)])
-    pixel = '0'
-    db.save_data(a, dataset, pixel)
-    b = db.load_data(dataset, pixel)[0]
+    contact_id = '0'
+    db.save_data(a, dataset, contact_id)
+    b = db.load_data(dataset, contact_id)[0]
     assert (a == b).all()
     assert b.dtype.names == ('A', 'B')
-    pixels = ['1', '2', '3']
+    contact_ids = ['1', '2', '3']
     a2 = a.copy()
     a2['A'] += 1
     a2['B'] += 1
@@ -69,9 +69,9 @@ def test_save_and_load_data(db: Database, dataset: str):
     a3['A'] *= 10
     a3['B'] -= 1
     datasets = [a, a2, a3]
-    for pixel, data in zip(pixels, datasets):
-        db.save_data(data, dataset, pixel)
-    for c, d in zip(db.load_data(dataset, pixels), datasets):
+    for contact_id, data in zip(contact_ids, datasets):
+        db.save_data(data, dataset, contact_id)
+    for c, d in zip(db.load_data(dataset, contact_ids), datasets):
         assert (c == d).all()
 
 

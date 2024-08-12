@@ -1,9 +1,8 @@
-from __future__ import annotations
 import pytest
 import configparser
 from cohesivm import config
-from cohesivm.devices.agilent.Agilent4284A import Agilent4284A, Agilent4284ALCRChannel
-from cohesivm.devices.ossila import OssilaX200SMUChannel
+from cohesivm.devices.agilent.Agilent4284A import Agilent4284A, LCRChannel
+from cohesivm.devices.ossila.OssilaX200 import VoltageSMUChannel
 
 
 class TestConfiguration:
@@ -18,7 +17,7 @@ class TestConfiguration:
                              cases_lcr_channel_exceptions)
     def test_smu_channel_exceptions(self, s_trigger_delay, s_integration_time, s_averaging_rate, expected):
         with pytest.raises(expected):
-            Agilent4284ALCRChannel(
+            LCRChannel(
                 s_trigger_delay=s_trigger_delay,
                 s_integration_time=s_integration_time,
                 s_averaging_rate=s_averaging_rate
@@ -26,9 +25,9 @@ class TestConfiguration:
 
     cases_device_exceptions = [
         # too many channels
-        ([Agilent4284ALCRChannel(), Agilent4284ALCRChannel()], ValueError),
-        # not Agilent4284ALCRChannel
-        ([OssilaX200SMUChannel()], TypeError)
+        ([LCRChannel(), LCRChannel()], ValueError),
+        # not LCRChannel
+        ([VoltageSMUChannel()], TypeError)
     ]
 
     @pytest.mark.parametrize("channels, expected", cases_device_exceptions)
@@ -51,11 +50,12 @@ class TestConfiguration:
 
     @pytest.mark.parametrize("setting_key, setting_value, expected", cases_change_setting_exceptions)
     def test_change_setting_exceptions(self, setting_key, setting_value, expected):
-        lcr = Agilent4284ALCRChannel()
+        lcr = LCRChannel()
         with pytest.raises(expected):
             lcr.change_setting(setting_key, setting_value)
 
 
+@pytest.mark.hardware('agilent_4284a')
 @pytest.mark.incremental
 class TestAgilent4284ADeviceAndChannels:
     """The tests within this class require a connected device."""
@@ -64,7 +64,7 @@ class TestAgilent4284ADeviceAndChannels:
         resource_name = config.get_option('Agilent4284A', 'resource_name')
     except configparser.NoSectionError:
         resource_name = ''
-    device = Agilent4284A(channels=[Agilent4284ALCRChannel()], resource_name=resource_name)
+    device = Agilent4284A(channels=[LCRChannel()], resource_name=resource_name)
 
     def test_connection(self):
         try:

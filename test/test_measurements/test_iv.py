@@ -6,7 +6,7 @@ from .. import DemoSourceMeasureUnitChannel, DemoDevice
 
 class DemoSourceMeasureUnitChannel2(DemoSourceMeasureUnitChannel):
 
-    def source_and_measure(self, voltage: float) -> Tuple[float, float]:
+    def source_voltage_and_measure(self, voltage: float) -> Tuple[float, float]:
         return voltage, 0.5*voltage
 
 

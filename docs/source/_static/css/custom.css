@@ -1,0 +1,41 @@
+.center-emphasize {
+    text-align: center;
+}
+
+.wy-nav-content {
+    max-width: 900px !important;
+}
+
+dl {
+    width: 100%;
+}
+
+.field-list.simple ul.simple li {
+    list-style: none;
+    margin-left: 0;
+}
+
+#type-aliases .class,
+#generics .class {
+    overflow: hidden;
+    height: 0;
+    margin: 0;
+    padding: 0;
+}
+
+.py > dt:target,
+.py.class:has(> dt:target) + .data > dt {
+    box-shadow: rgba(0, 0, 0, 0.16) 0px 3px 6px, rgba(0, 0, 0, 0.23) 0px 3px 6px;
+}
+
+.py > dt:target:before,
+.py.class:has(> dt:target) + .data > dt:before {
+    content: '';
+    width: 0;
+    height: 0;
+    position: absolute;
+    left: -25px;
+    border-top: 10px solid transparent;
+    border-bottom: 10px solid transparent;
+    border-left: 10px solid #2980b9;
+}

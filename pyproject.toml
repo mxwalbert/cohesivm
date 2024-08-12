@@ -1,0 +1,57 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "cohesivm"
+version = "1.0.0"
+authors = [
+    { name="Maximilian Wolf", email="maximilian.wolf@ait.ac.at" },
+    { name="Selina Götz", email="selina.goetz@ait.ac.at" },
+    { name="Georg K.H. Madsen", email="georg.madsen@tuwien.ac.at" },
+    { name="Theodoros Dimopoulos", email="theodoros.dimopoulos@ait.ac.at" },
+]
+description = "Combinatorial h+/e- Sample Investigation using Voltaic Measurements"
+readme = "README.md"
+requires-python = ">=3.9"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Topic :: Scientific/Engineering :: Human Machine Interfaces"
+]
+dependencies = [
+    "h5py~=3.8",
+    "numpy~=1.21",
+    "matplotlib~=3.7",
+    "tqdm~=4.65"
+]
+
+# start-extras
+[project.optional-dependencies]
+gui = [
+    "bqplot~=0.12"
+]
+ma8x8 = [
+    "pyserial~=3.5"
+]
+ossila = [
+    "xtralien~=2.10"
+]
+agilent = [
+    "pyvisa~=1.13"
+]
+full = [
+    "cohesivm[gui,ma8x8,ossila,agilent]"
+]
+dev = [
+    "cohesivm[full]",
+    "pytest~=7.3"
+]
+# end-extras
+
+[project.urls]
+Homepage = "https://github.com/mxwalbert/cohesivm"
+Documentation = "https://cohesivm.readthedocs.io"
+Issues = "https://github.com/mxwalbert/cohesivm/issues"
+

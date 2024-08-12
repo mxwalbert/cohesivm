@@ -1,45 +1,50 @@
+import copy
 import numpy as np
 import multiprocessing as mp
 from typing import Any, Tuple
-from cohesivm.database import Dimensions
-from cohesivm.interfaces import InterfaceType, InterfaceABC
-from cohesivm.devices import DeviceABC
-from cohesivm.measurements import MeasurementABC
-from cohesivm.channels import SourceMeasureUnitChannel, VoltmeterChannel
-from cohesivm.analysis import AnalysisABC, result_buffer
+from cohesivm.database import Dimensions, DatabaseDict
+from cohesivm.interfaces import InterfaceType, Interface
+from cohesivm.devices import Device
+from cohesivm.measurements import Measurement
+from cohesivm.channels import Channel, Voltmeter, VoltageSMU
+from cohesivm.analysis import Analysis, result_buffer
 from cohesivm.plots import XYPlot
 
 
-class DemoInterface(InterfaceABC):
-    _interface_type = InterfaceType.Demo1
-    _pixel_ids = ['0']
-    _pixel_positions = {'0': (0, 0)}
-    _sample_dimensions = Dimensions.Point()
+class DemoInterfaceType(InterfaceType):
+    """For testing purposes."""
+
+
+class DemoInterface(Interface):
+    _interface_type = DemoInterfaceType
+    _contact_ids = ['0']
+    _contact_positions = {'0': (0, 0)}
+    _interface_dimensions = Dimensions.Point()
 
     def __init__(self):
-        InterfaceABC.__init__(self, pixel_dimensions=Dimensions.Point())
+        super().__init__(pixel_dimensions=Dimensions.Point())
 
-    def _select_pixel(self, pixel: str):
+    def _select_contact(self, contact_id: str):
         pass
 
 
-class DemoMeasurement(MeasurementABC):
+class DemoMeasurement(Measurement):
     _name = 'demo'
-    _interface_type = InterfaceType.Demo1
-    _required_channels = [(SourceMeasureUnitChannel, VoltmeterChannel)]
-    _output_type = np.dtype([('x', float), ('y', float)])
+    _interface_type = DemoInterfaceType
+    _required_channels = [(VoltageSMU,)]
+    _output_type = [('x', float), ('y', float)]
 
     def __init__(self):
-        MeasurementABC.__init__(self, {}, (1, 0))
+        super().__init__({}, (1, 0))
 
-    def run(self, device: DeviceABC, data_stream: mp.Queue):
+    def run(self, device: Device, data_stream: mp.Queue):
         return np.array([0])
 
 
-class DemoSourceMeasureUnitChannel(SourceMeasureUnitChannel):
+class DemoSourceMeasureUnitChannel(VoltageSMU):
 
-    def __init__(self):
-        SourceMeasureUnitChannel.__init__(self)
+    def __init__(self, identifier: str = None, settings: DatabaseDict = None) -> None:
+        Channel.__init__(self, identifier, settings)
 
     def set_property(self, name: str, value: Any):
         pass
@@ -56,50 +61,78 @@ class DemoSourceMeasureUnitChannel(SourceMeasureUnitChannel):
     def disable(self):
         pass
 
-    def measure_voltage(self) -> float:
-        pass
-
-    def measure_current(self) -> float:
-        pass
-
-    def source_voltage(self, voltage: float):
-        pass
-
-    def source_and_measure(self, voltage: float) -> Tuple[float, float]:
+    def source_voltage_and_measure(self, voltage: float) -> Tuple[float, float]:
         pass
 
 
-class DemoDevice(DeviceABC):
+class DemoDevice(Device):
     def __init__(self, channels=None):
         if channels is None:
             channels = [DemoSourceMeasureUnitChannel()]
-        DeviceABC.__init__(self, channels)
+        super().__init__(channels)
 
     def _establish_connection(self) -> bool:
         return True
 
 
-class DemoAnalysis(AnalysisABC):
+class DemoAnalysis(Analysis):
 
-    def __init__(self, dataset, pixel_positions=None):
+    def __init__(self, dataset, contact_positions=None):
         functions = {
-            'Maximum': self.max
+            'Maximum': self.max,
+            'Minimum': self.min,
+            'Sum': self.sum,
+            'Dot Product': self.dot_product,
+            'Average': self.average
         }
         plots = {
+            'Measurement': self.measurement,
             'Semilog': self.semilog
         }
-        AnalysisABC.__init__(self, functions, plots, dataset, pixel_positions)
+        super().__init__(functions, plots, dataset, contact_positions)
 
     @result_buffer
-    def max(self, pixel):
-        if self.dataset[pixel].dtype.names is None:
-            return max(self.dataset[pixel])
-        return max(self.dataset[pixel][self.dataset[pixel].dtype.names[-1]])
+    def max(self, contact_id):
+        if self.data[contact_id].dtype.names is None:
+            return max(self.data[contact_id])
+        return max(self.data[contact_id][self.data[contact_id].dtype.names[1]])
 
-    def semilog(self, pixel):
+    @result_buffer
+    def min(self, contact_id):
+        if self.data[contact_id].dtype.names is None:
+            return min(self.data[contact_id])
+        return min(self.data[contact_id][self.data[contact_id].dtype.names[1]])
+
+    @result_buffer
+    def sum(self, contact_id):
+        if self.data[contact_id].dtype.names is None:
+            return sum(self.data[contact_id])
+        return sum(self.data[contact_id][self.data[contact_id].dtype.names[1]])
+
+    @result_buffer
+    def dot_product(self, contact_id):
+        if self.data[contact_id].dtype.names is None:
+            return sum(self.data[contact_id])
+        return sum(self.data[contact_id][self.data[contact_id].dtype.names[0]]
+                   * self.data[contact_id][self.data[contact_id].dtype.names[1]])
+
+    @result_buffer
+    def average(self, contact_id):
+        if self.data[contact_id].dtype.names is None:
+            return sum(self.data[contact_id]) / len(self.data[contact_id])
+        return sum(self.data[contact_id][self.data[contact_id].dtype.names[-1]]) / len(self.data[contact_id])
+
+    def measurement(self, contact_id):
         plot = XYPlot()
         plot.make_plot()
-        data = self.dataset[pixel].copy()
+        data = copy.deepcopy(self.data[contact_id])
+        plot.update_plot(data)
+        return plot.figure
+
+    def semilog(self, contact_id):
+        plot = XYPlot()
+        plot.make_plot()
+        data = copy.deepcopy(self.data[contact_id])
         data[data.dtype.names[1]] = np.log(data[data.dtype.names[1]])
         plot.update_plot(data)
         return plot.figure

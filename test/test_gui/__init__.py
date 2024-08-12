@@ -1,36 +1,36 @@
 import time
 import numpy as np
 import multiprocessing as mp
+from .. import DemoInterfaceType
 from cohesivm.database import Dimensions
-from cohesivm.interfaces import InterfaceType, InterfaceABC
-from cohesivm.devices import DeviceABC
-from cohesivm.measurements import MeasurementABC
-from cohesivm.channels import SourceMeasureUnitChannel, VoltmeterChannel
+from cohesivm.interfaces import Interface
+from cohesivm.devices import Device
+from cohesivm.measurements import Measurement
 
 
-class DemoInterface(InterfaceABC):
-    _interface_type = InterfaceType.Demo1
-    _sample_dimensions = Dimensions.Point()
-    _pixel_ids = ['11', '12', '21', '22']
-    _pixel_positions = {pixel: position for pixel, position in zip(_pixel_ids, [(0, 1), (1, 1), (0, 0), (1, 0)])}
+class DemoInterface(Interface):
+    _interface_type = DemoInterfaceType
+    _interface_dimensions = Dimensions.Point()
+    _contact_ids = ['11', '12', '21', '22']
+    _contact_positions = {c: p for c, p in zip(_contact_ids, [(0, 1), (1, 1), (0, 0), (1, 0)])}
 
     def __init__(self):
-        InterfaceABC.__init__(self, Dimensions.Point())
+        Interface.__init__(self, Dimensions.Point())
 
-    def _select_pixel(self, pixel: str):
+    def _select_contact(self, contact_id: str):
         pass
 
 
-class DemoMeasurement(MeasurementABC):
+class DemoMeasurement(Measurement):
     _name = 'demo'
-    _interface_type = InterfaceType.Demo1
-    _required_channels = [(SourceMeasureUnitChannel, VoltmeterChannel)]
+    _interface_type = DemoInterfaceType
+    _required_channels = []
     _output_type = np.dtype([('x', float), ('y', float)])
 
     def __init__(self):
-        MeasurementABC.__init__(self, {}, (10, 2))
+        Measurement.__init__(self, {}, (10, 2))
 
-    def run(self, device: DeviceABC, data_stream: mp.Queue):
+    def run(self, device: Device, data_stream: mp.Queue):
         results = []
         for i in range(10):
             result = (i, i*i)

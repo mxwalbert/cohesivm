@@ -16,7 +16,7 @@ def dataset():
 
 
 @pytest.fixture
-def pixel_positions():
+def contact_positions():
     return {
         '1': (0., 0.),
         '2': (1., 0.),
@@ -39,39 +39,39 @@ def test_result_buffer(dataset):
     assert analysis._buffer['max']['1'] == result_dict['1']
 
 
-def test_generate_result_map(dataset, pixel_positions):
-    analysis = DemoAnalysis(dataset, pixel_positions)
+def test_generate_result_map(dataset, contact_positions):
+    analysis = DemoAnalysis(dataset, contact_positions)
     result_map = analysis.generate_result_maps('Maximum')[0]
     assert np.allclose(result_map, [[0., 1.], [3., 2.], [5., 6.]], equal_nan=True)
     del dataset['5']
-    analysis = DemoAnalysis(dataset, pixel_positions)
+    analysis = DemoAnalysis(dataset, contact_positions)
     result_map = analysis.generate_result_maps('Maximum')[0]
     assert np.allclose(result_map, [[0., 1.], [3., 2.], [np.nan, 6.]], equal_nan=True)
     del dataset['6']
-    del pixel_positions['6']
-    analysis = DemoAnalysis(dataset, pixel_positions)
+    del contact_positions['6']
+    analysis = DemoAnalysis(dataset, contact_positions)
     result_map = analysis.generate_result_maps('Maximum')[0]
     assert np.allclose(result_map, [[0., 1.], [3., 2.], [np.nan, np.nan]], equal_nan=True)
-    del pixel_positions['5']
-    analysis = DemoAnalysis(dataset, pixel_positions)
+    del contact_positions['5']
+    analysis = DemoAnalysis(dataset, contact_positions)
     result_map = analysis.generate_result_maps('Maximum')[0]
     assert np.allclose(result_map, [[0., 1.], [3., 2.]], equal_nan=True)
     del dataset['3']
     del dataset['4']
-    del pixel_positions['3']
-    del pixel_positions['4']
-    analysis = DemoAnalysis(dataset, pixel_positions)
+    del contact_positions['3']
+    del contact_positions['4']
+    analysis = DemoAnalysis(dataset, contact_positions)
     result_map = analysis.generate_result_maps('Maximum')[0]
     assert np.allclose(result_map, [[0., 1.]], equal_nan=True)
     del dataset['2']
-    del pixel_positions['2']
-    analysis = DemoAnalysis(dataset, pixel_positions)
+    del contact_positions['2']
+    analysis = DemoAnalysis(dataset, contact_positions)
     result_map = analysis.generate_result_maps('Maximum')[0]
     assert np.allclose(result_map, [[0.]], equal_nan=True)
 
 
 def test_non_regular_result_map(dataset):
-    pixel_positions = {
+    contact_positions = {
         '1': (0.1, 0.1),
         '2': (1.5, 0.1),
         '3': (0.1, 1.5),
@@ -79,7 +79,6 @@ def test_non_regular_result_map(dataset):
         '5': (0.1, 3.),
         '6': (1.5, 3.)
     }
-    analysis = DemoAnalysis(dataset, pixel_positions)
+    analysis = DemoAnalysis(dataset, contact_positions)
     result_map = analysis.generate_result_maps('Maximum')[0]
-    print(result_map)
     assert np.allclose(result_map, [[0., 1.], [3., 2.], [5., 6.]], equal_nan=True)
