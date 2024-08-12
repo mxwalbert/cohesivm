@@ -214,14 +214,14 @@ Detailed guides to work with the GUIs can be found in the [documentation](https:
 
 ### Run an Experiment
 
-Follow the {doc}`Basic Usage</getting_started/basic_usage>` example to set up and run an 
+Follow the [Basic Usage](https://cohesivm.readthedocs.io//getting_started/basic_usage.html) example to set up and run an 
 [``Experiment``](https://cohesivm.readthedocs.io/reference/experiment.html#cohesivm.experiment.Experiment). If you do not have all components ready yet, follow these tutorials:
 
-- {doc}`Implement a Device</tutorials/device>`
-- {doc}`Implement an Interface</tutorials/interface>`
-- {doc}`Implement a Measurement</tutorials/measurement>`
+- [Implement a Device](https://cohesivm.readthedocs.io//tutorials/device.html)
+- [Implement an Interface](https://cohesivm.readthedocs.io//tutorials/interface.html)
+- [Implement a Measurement](https://cohesivm.readthedocs.io//tutorials/measurement.html)
 
-To follow the other examples you may just run the code from the {doc}`Basic Usage</getting_started/basic_usage>` 
+To follow the other examples you may just run the code from the [Basic Usage](https://cohesivm.readthedocs.io//getting_started/basic_usage.html) 
 example even if you do not have access to the hardware. This will fail but create an HDF5 file and store an empty 
 dataset entry.
 
@@ -303,7 +303,7 @@ The [``Analysis``](https://cohesivm.readthedocs.io/reference/analysis.html#cohes
 this will determine how the data is shaped and which features you want to extract from it. Therefore, the base class
 should be extended as explained in this tutorial:
 
-- {doc}`Implement an Analysis</tutorials/analysis>`
+- [Implement an Analysis](https://cohesivm.readthedocs.io//tutorials/analysis.html)
 
 However, in the following example, the base class will be used to show the basic functionality.
 
@@ -366,7 +366,7 @@ True
 ```
 
 The main usage of the [``Analysis``](https://cohesivm.readthedocs.io/reference/analysis.html#cohesivm.analysis.Analysis), besides providing the framework for
-the {doc}`Analysis GUI</guis/analysis>`, is to quickly generate maps of analysis results:
+the [Analysis GUI](https://cohesivm.readthedocs.io//guis/analysis.html), is to quickly generate maps of analysis results:
 
 ```pycon
 >>> analysis.generate_result_maps('Maximum')[0]

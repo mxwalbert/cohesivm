@@ -11,7 +11,7 @@ with open('../pyproject.toml', 'r') as f:
 def reformat_line(line, codeblock, depth):
     base_link = config['project']['urls']['Documentation']
     while True:
-        match = re.search('{(\\S+)}`(\\S+)`', line)
+        match = re.search('{(\\S+)}`(\\S+|.+<\\S+>)`', line)
         if match is None:
             break
         role, target = match.groups()
