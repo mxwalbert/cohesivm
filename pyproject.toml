@@ -52,6 +52,6 @@ dev = [
 
 [project.urls]
 Homepage = "https://github.com/mxwalbert/cohesivm"
-Documentation = "https://cohesivm.readthedocs.io"
+Documentation = "https://cohesivm.readthedocs.io/en/latest"
 Issues = "https://github.com/mxwalbert/cohesivm/issues"
 

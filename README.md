@@ -6,23 +6,23 @@ The COHESIVM Python package provides a versatile framework for conducting combin
 scientific research and development. In order to enable a broad range of electrical and electrochemical analysis
 methods, COHESIVM uses a generalized design of the main components which facilitates the extension and adaptation to
 different measurement devices and routines. These components are cohesively put together in an
-[``Experiment``](https://cohesivm.readthedocs.io/reference/experiment.html#cohesivm.experiment.Experiment) class which runs compatibility checks and executes the actual measurements.
+[``Experiment``](https://cohesivm.readthedocs.io/en/latest/reference/experiment.html#cohesivm.experiment.Experiment) class which runs compatibility checks and executes the actual measurements.
 
 ### Key Features:
 
 - **Modular Design:** COHESIVM adopts a module-oriented approach where components such as measurement devices
-  ([``Device``](https://cohesivm.readthedocs.io/reference/devices.html#cohesivm.devices.Device)), contacting interfaces ([``Interface``](https://cohesivm.readthedocs.io/reference/interfaces.html#cohesivm.interfaces.Interface)), and measurement
-  routines ([``Measurement``](https://cohesivm.readthedocs.io/reference/measurements.html#cohesivm.measurements.Measurement)) are abstracted into interchangeable units. This modular
+  ([``Device``](https://cohesivm.readthedocs.io/en/latest/reference/devices.html#cohesivm.devices.Device)), contacting interfaces ([``Interface``](https://cohesivm.readthedocs.io/en/latest/reference/interfaces.html#cohesivm.interfaces.Interface)), and measurement
+  routines ([``Measurement``](https://cohesivm.readthedocs.io/en/latest/reference/measurements.html#cohesivm.measurements.Measurement)) are abstracted into interchangeable units. This modular
   architecture enhances flexibility in experimental setups and makes it easy to add new component implementations.
 - **Combinatorial Flexibility:** By abstracting the class for the contacting interface, COHESIVM enables diverse
   configurations for sample investigation. Researchers can simply implement their combinatorial sample design or even
   interface a robotic contacting system.
 - **Data Handling:** Collected data is stored in a structured [HDF5](https://www.hdfgroup.org/solutions/hdf5/) database
-  format using the [``Database``](https://cohesivm.readthedocs.io/reference/database.html#cohesivm.database.Database) class, ensuring efficient data management and accessibility.
-  [``Metadata``](https://cohesivm.readthedocs.io/reference/database.html#cohesivm.database.Metadata) is collected based on the [DCMI standard](http://purl.org/dc/terms/) which is
+  format using the [``Database``](https://cohesivm.readthedocs.io/en/latest/reference/database.html#cohesivm.database.Database) class, ensuring efficient data management and accessibility.
+  [``Metadata``](https://cohesivm.readthedocs.io/en/latest/reference/database.html#cohesivm.database.Metadata) is collected based on the [DCMI standard](http://purl.org/dc/terms/) which is
   extended by COHESIVM-specific metadata terms.
 - **Analysis and GUIs:** Alongside the measurement routines, analysis functions and plots can be implemented, extending
-  the [``Analysis``](https://cohesivm.readthedocs.io/reference/analysis.html#cohesivm.analysis.Analysis) base class. Together with the graphical user interface (also available for
+  the [``Analysis``](https://cohesivm.readthedocs.io/en/latest/reference/analysis.html#cohesivm.analysis.Analysis) base class. Together with the graphical user interface (also available for
   conducting experiments and reviewing the database contents), initial screening of the data is facilitated.
  
 ## Table of Contents
@@ -122,8 +122,8 @@ timeout = 0.1
 
 ### Basic Usage
 
-With working implementations of the main components ([``Device``](https://cohesivm.readthedocs.io/reference/devices.html#cohesivm.devices.Device),
-[``Interface``](https://cohesivm.readthedocs.io/reference/interfaces.html#cohesivm.interfaces.Interface), [``Measurement``](https://cohesivm.readthedocs.io/reference/measurements.html#cohesivm.measurements.Measurement)), setting up and running an
+With working implementations of the main components ([``Device``](https://cohesivm.readthedocs.io/en/latest/reference/devices.html#cohesivm.devices.Device),
+[``Interface``](https://cohesivm.readthedocs.io/en/latest/reference/interfaces.html#cohesivm.interfaces.Interface), [``Measurement``](https://cohesivm.readthedocs.io/en/latest/reference/measurements.html#cohesivm.measurements.Measurement)), setting up and running an
 experiment only takes a few lines of code:
 
 ```python
@@ -163,7 +163,7 @@ with pbar.show():
 ```
 
 If you want to change the measurement device to a different one, you only need to adjust the lines for the
-[``Channel``](https://cohesivm.readthedocs.io/reference/channels.html#cohesivm.channels.Channel) and the [``Device``](https://cohesivm.readthedocs.io/reference/devices.html#cohesivm.devices.Device) accordingly:
+[``Channel``](https://cohesivm.readthedocs.io/en/latest/reference/channels.html#cohesivm.channels.Channel) and the [``Device``](https://cohesivm.readthedocs.io/en/latest/reference/devices.html#cohesivm.devices.Device) accordingly:
 
 ```python
 from cohesivm.devices.ossila import OssilaX200
@@ -179,52 +179,52 @@ in the form of [Jupyter Widgets](https://ipywidgets.readthedocs.io/en/stable/). 
 ### Experiment GUI
 
 ![experiment-gui](https://github.com/mxwalbert/cohesivm/assets/84664695/3de52bdc-1c8e-4de3-944c-e2db6df759f1)
-On the left panel "Control", you see the current [``ExperimentState``](https://cohesivm.readthedocs.io/reference/experiment.html#cohesivm.experiment.ExperimentState), followed by a 
-representation of the [``Interface``](https://cohesivm.readthedocs.io/reference/interfaces.html#cohesivm.interfaces.Interface) and the control buttons at the bottom. The circles are 
-annotated with the [``contact_ids``](https://cohesivm.readthedocs.io/reference/interfaces.html#cohesivm.interfaces.Interface.contact_ids) and the colors correspond to their current state. 
-On the right panel "Plot", the currently running [``Measurement``](https://cohesivm.readthedocs.io/reference/measurements.html#cohesivm.measurements.Measurement) is displayed. The plot is 
+On the left panel "Control", you see the current [``ExperimentState``](https://cohesivm.readthedocs.io/en/latest/reference/experiment.html#cohesivm.experiment.ExperimentState), followed by a 
+representation of the [``Interface``](https://cohesivm.readthedocs.io/en/latest/reference/interfaces.html#cohesivm.interfaces.Interface) and the control buttons at the bottom. The circles are 
+annotated with the [``contact_ids``](https://cohesivm.readthedocs.io/en/latest/reference/interfaces.html#cohesivm.interfaces.Interface.contact_ids) and the colors correspond to their current state. 
+On the right panel "Plot", the currently running [``Measurement``](https://cohesivm.readthedocs.io/en/latest/reference/measurements.html#cohesivm.measurements.Measurement) is displayed. The plot is 
 automatically updated as soon as new measurement data arrives in the 
-[``data_stream``](https://cohesivm.readthedocs.io/reference/experiment.html#cohesivm.experiment.Experiment.data_stream) of the [``Experiment``](https://cohesivm.readthedocs.io/reference/experiment.html#cohesivm.experiment.Experiment) object.
+[``data_stream``](https://cohesivm.readthedocs.io/en/latest/reference/experiment.html#cohesivm.experiment.Experiment.data_stream) of the [``Experiment``](https://cohesivm.readthedocs.io/en/latest/reference/experiment.html#cohesivm.experiment.Experiment) object.
 
 ### Database GUI
 
 ![database-gui](https://github.com/mxwalbert/cohesivm/assets/84664695/3ad88365-1bf1-4281-87bf-78aa8e9dc918)
 This GUI enables to display and filter the measurement data which is stored in an HDF5 file. At the top, you select to
-display the data grouped in terms of the [``Measurement``](https://cohesivm.readthedocs.io/reference/measurements.html#cohesivm.measurements.Measurement) or by the
-[``sample_name``](https://cohesivm.readthedocs.io/reference/experiment.html#cohesivm.experiment.Experiment.sample_name) of the [``Experiment``](https://cohesivm.readthedocs.io/reference/experiment.html#cohesivm.experiment.Experiment) object. If you
+display the data grouped in terms of the [``Measurement``](https://cohesivm.readthedocs.io/en/latest/reference/measurements.html#cohesivm.measurements.Measurement) or by the
+[``sample_name``](https://cohesivm.readthedocs.io/en/latest/reference/experiment.html#cohesivm.experiment.Experiment.sample_name) of the [``Experiment``](https://cohesivm.readthedocs.io/en/latest/reference/experiment.html#cohesivm.experiment.Experiment) object. If you
 choose the former one, you may additionally filter the data by means of measurement parameters. The button to the very
-right of each data row enables you to copy the dataset path, to access it in the [``Database``](https://cohesivm.readthedocs.io/reference/database.html#cohesivm.database.Database).
+right of each data row enables you to copy the dataset path, to access it in the [``Database``](https://cohesivm.readthedocs.io/en/latest/reference/database.html#cohesivm.database.Database).
 
 ### Analysis GUI
 
 ![analysis-gui](https://github.com/mxwalbert/cohesivm/assets/84664695/0f8dbdb2-1464-456a-a0ac-cfed42ec9b4a)
 Similar to the Experiment GUI, the "Interface" panel represents the contacts with their respective IDs. They can be
 clicked to display the measured data in the "Plot" panel to the right. There, the arrows can be used to switch between
-[``functions``](https://cohesivm.readthedocs.io/reference/analysis.html#cohesivm.analysis.Analysis.functions) that are defined in the [``Analysis``](https://cohesivm.readthedocs.io/reference/analysis.html#cohesivm.analysis.Analysis) class. The
-results of the [``functions``](https://cohesivm.readthedocs.io/reference/analysis.html#cohesivm.analysis.Analysis.functions), which are also implemented there, are shown in the table
+[``functions``](https://cohesivm.readthedocs.io/en/latest/reference/analysis.html#cohesivm.analysis.Analysis.functions) that are defined in the [``Analysis``](https://cohesivm.readthedocs.io/en/latest/reference/analysis.html#cohesivm.analysis.Analysis) class. The
+results of the [``functions``](https://cohesivm.readthedocs.io/en/latest/reference/analysis.html#cohesivm.analysis.Analysis.functions), which are also implemented there, are shown in the table
 below.
 
-Detailed guides to work with the GUIs can be found in the [documentation](https://cohesivm.readthedocs.io/).
+Detailed guides to work with the GUIs can be found in the [documentation](https://cohesivm.readthedocs.io/en/latest/).
 
 ## Examples <a name="examples"></a>
 
 ### Run an Experiment
 
-Follow the [Basic Usage](https://cohesivm.readthedocs.io//getting_started/basic_usage.html) example to set up and run an 
-[``Experiment``](https://cohesivm.readthedocs.io/reference/experiment.html#cohesivm.experiment.Experiment). If you do not have all components ready yet, follow these tutorials:
+Follow the [Basic Usage](https://cohesivm.readthedocs.io/en/latest//getting_started/basic_usage.html) example to set up and run an 
+[``Experiment``](https://cohesivm.readthedocs.io/en/latest/reference/experiment.html#cohesivm.experiment.Experiment). If you do not have all components ready yet, follow these tutorials:
 
-- [Implement a Device](https://cohesivm.readthedocs.io//tutorials/device.html)
-- [Implement an Interface](https://cohesivm.readthedocs.io//tutorials/interface.html)
-- [Implement a Measurement](https://cohesivm.readthedocs.io//tutorials/measurement.html)
+- [Implement a Device](https://cohesivm.readthedocs.io/en/latest//tutorials/device.html)
+- [Implement an Interface](https://cohesivm.readthedocs.io/en/latest//tutorials/interface.html)
+- [Implement a Measurement](https://cohesivm.readthedocs.io/en/latest//tutorials/measurement.html)
 
-To follow the other examples you may just run the code from the [Basic Usage](https://cohesivm.readthedocs.io//getting_started/basic_usage.html) 
+To follow the other examples you may just run the code from the [Basic Usage](https://cohesivm.readthedocs.io/en/latest//getting_started/basic_usage.html) 
 example even if you do not have access to the hardware. This will fail but create an HDF5 file and store an empty 
 dataset entry.
 
 ### Manage the Data
 
-After you collected some data and stored it in an HDF5 file, you can use the [``Database``](https://cohesivm.readthedocs.io/reference/database.html#cohesivm.database.Database) class
-to work with it. First, initialise the [``Database``](https://cohesivm.readthedocs.io/reference/database.html#cohesivm.database.Database) object and list the samples which are stored
+After you collected some data and stored it in an HDF5 file, you can use the [``Database``](https://cohesivm.readthedocs.io/en/latest/reference/database.html#cohesivm.database.Database) class
+to work with it. First, initialise the [``Database``](https://cohesivm.readthedocs.io/en/latest/reference/database.html#cohesivm.database.Database) object and list the samples which are stored
 there:
 
 ```pycon
@@ -234,9 +234,9 @@ there:
 ['test_sample_42']
 ```
 
-This is exactly the [``sample_id``](https://cohesivm.readthedocs.io/reference/experiment.html#cohesivm.experiment.Experiment.sample_id) which was specified when the
-[``Experiment``](https://cohesivm.readthedocs.io/reference/experiment.html#cohesivm.experiment.Experiment) was configured, and it can be used to retrieve the actual
-[``dataset``](https://cohesivm.readthedocs.io/reference/experiment.html#cohesivm.experiment.Experiment.dataset) path in the [``Database``](https://cohesivm.readthedocs.io/reference/database.html#cohesivm.database.Database) object:
+This is exactly the [``sample_id``](https://cohesivm.readthedocs.io/en/latest/reference/experiment.html#cohesivm.experiment.Experiment.sample_id) which was specified when the
+[``Experiment``](https://cohesivm.readthedocs.io/en/latest/reference/experiment.html#cohesivm.experiment.Experiment) was configured, and it can be used to retrieve the actual
+[``dataset``](https://cohesivm.readthedocs.io/en/latest/reference/experiment.html#cohesivm.experiment.Experiment.dataset) path in the [``Database``](https://cohesivm.readthedocs.io/en/latest/reference/database.html#cohesivm.database.Database) object:
 
 ```pycon
 >>> db.filter_by_sample_id('test_sample_42')
@@ -244,12 +244,12 @@ This is exactly the [``sample_id``](https://cohesivm.readthedocs.io/reference/ex
 ```
 
 The resulting list contains the path strings for all experiments with the specified
-[``sample_id``](https://cohesivm.readthedocs.io/reference/experiment.html#cohesivm.experiment.Experiment.sample_id) (currently only one entry). These strings get quite long because they
-contain the [``name``](https://cohesivm.readthedocs.io/reference/measurements.html#cohesivm.measurements.Measurement.name) of the [``Measurement``](https://cohesivm.readthedocs.io/reference/measurements.html#cohesivm.measurements.Measurement)
-procedure, followed by a hashed representation of the [``settings``](https://cohesivm.readthedocs.io/reference/measurements.html#cohesivm.measurements.Measurement.settings) dictionary,
-and finally the datetime combined with the [``sample_id``](https://cohesivm.readthedocs.io/reference/experiment.html#cohesivm.experiment.Experiment.sample_id). With this
-[``dataset``](https://cohesivm.readthedocs.io/reference/experiment.html#cohesivm.experiment.Experiment.dataset) path, you may retrieve some information from the
-[``Metadata``](https://cohesivm.readthedocs.io/reference/database.html#cohesivm.database.Metadata) object which got created by the [``Experiment``](https://cohesivm.readthedocs.io/reference/experiment.html#cohesivm.experiment.Experiment):
+[``sample_id``](https://cohesivm.readthedocs.io/en/latest/reference/experiment.html#cohesivm.experiment.Experiment.sample_id) (currently only one entry). These strings get quite long because they
+contain the [``name``](https://cohesivm.readthedocs.io/en/latest/reference/measurements.html#cohesivm.measurements.Measurement.name) of the [``Measurement``](https://cohesivm.readthedocs.io/en/latest/reference/measurements.html#cohesivm.measurements.Measurement)
+procedure, followed by a hashed representation of the [``settings``](https://cohesivm.readthedocs.io/en/latest/reference/measurements.html#cohesivm.measurements.Measurement.settings) dictionary,
+and finally the datetime combined with the [``sample_id``](https://cohesivm.readthedocs.io/en/latest/reference/experiment.html#cohesivm.experiment.Experiment.sample_id). With this
+[``dataset``](https://cohesivm.readthedocs.io/en/latest/reference/experiment.html#cohesivm.experiment.Experiment.dataset) path, you may retrieve some information from the
+[``Metadata``](https://cohesivm.readthedocs.io/en/latest/reference/database.html#cohesivm.database.Metadata) object which got created by the [``Experiment``](https://cohesivm.readthedocs.io/en/latest/reference/experiment.html#cohesivm.experiment.Experiment):
 
 ```pycon
 >>> dataset = db.filter_by_sample_id('test_sample_42')[0]
@@ -258,10 +258,10 @@ and finally the datetime combined with the [``sample_id``](https://cohesivm.read
 ('test_sample_42', 'Agilent4156C', 'MA8X8', 'CurrentVoltageCharacteristic')
 ```
 
-Storing a new dataset is less trivial because you need a fully qualified [``Metadata``](https://cohesivm.readthedocs.io/reference/database.html#cohesivm.database.Metadata) object,
+Storing a new dataset is less trivial because you need a fully qualified [``Metadata``](https://cohesivm.readthedocs.io/en/latest/reference/database.html#cohesivm.database.Metadata) object,
 which asks for a large number of arguments. Anyway, this is usually handled by the
-[``Experiment``](https://cohesivm.readthedocs.io/reference/experiment.html#cohesivm.experiment.Experiment) class because it guarantees that the specified components are compatible. For
-testing, the [``Metadata``](https://cohesivm.readthedocs.io/reference/database.html#cohesivm.database.Metadata) object from above may be used to initialize a new dataset:
+[``Experiment``](https://cohesivm.readthedocs.io/en/latest/reference/experiment.html#cohesivm.experiment.Experiment) class because it guarantees that the specified components are compatible. For
+testing, the [``Metadata``](https://cohesivm.readthedocs.io/en/latest/reference/database.html#cohesivm.database.Metadata) object from above may be used to initialize a new dataset:
 
 ```pycon
 >>> db.initialize_dataset(metadata)
@@ -278,7 +278,7 @@ the ``data`` of course):
 ```
 
 Finally, you may load a data entry by specifying the ``contact_id`` (or a list of several) or load an entire dataset,
-including the [``Metadata``](https://cohesivm.readthedocs.io/reference/database.html#cohesivm.database.Metadata):
+including the [``Metadata``](https://cohesivm.readthedocs.io/en/latest/reference/database.html#cohesivm.database.Metadata):
 
 ```pycon
 >>> db.load_data(dataset, '0')
@@ -289,21 +289,21 @@ including the [``Metadata``](https://cohesivm.readthedocs.io/reference/database.
 ({'0': array([1]), '1': array([42])}, Metadata(CurrentVoltageCharacteristic, Agilent4156C, MA8X8))
 ```
 
-The [``Database``](https://cohesivm.readthedocs.io/reference/database.html#cohesivm.database.Database) class also implements methods for filtering datasets based on
-[``settings``](https://cohesivm.readthedocs.io/reference/measurements.html#cohesivm.measurements.Measurement.settings) of the [``Measurement``](https://cohesivm.readthedocs.io/reference/measurements.html#cohesivm.measurements.Measurement). Check out the 
-documentation of the [``filter_by_settings``](https://cohesivm.readthedocs.io/reference/database.html#cohesivm.database.Database.filter_by_settings) and 
-[``filter_by_settings_batch``](https://cohesivm.readthedocs.io/reference/database.html#cohesivm.database.Database.filter_by_settings_batch) to learn more.
+The [``Database``](https://cohesivm.readthedocs.io/en/latest/reference/database.html#cohesivm.database.Database) class also implements methods for filtering datasets based on
+[``settings``](https://cohesivm.readthedocs.io/en/latest/reference/measurements.html#cohesivm.measurements.Measurement.settings) of the [``Measurement``](https://cohesivm.readthedocs.io/en/latest/reference/measurements.html#cohesivm.measurements.Measurement). Check out the 
+documentation of the [``filter_by_settings``](https://cohesivm.readthedocs.io/en/latest/reference/database.html#cohesivm.database.Database.filter_by_settings) and 
+[``filter_by_settings_batch``](https://cohesivm.readthedocs.io/en/latest/reference/database.html#cohesivm.database.Database.filter_by_settings_batch) to learn more.
 ### Analyse the Results
 
-The [``Analysis``](https://cohesivm.readthedocs.io/reference/analysis.html#cohesivm.analysis.Analysis) is tightly bound with the [``Measurement``](https://cohesivm.readthedocs.io/reference/measurements.html#cohesivm.measurements.Measurement) because
+The [``Analysis``](https://cohesivm.readthedocs.io/en/latest/reference/analysis.html#cohesivm.analysis.Analysis) is tightly bound with the [``Measurement``](https://cohesivm.readthedocs.io/en/latest/reference/measurements.html#cohesivm.measurements.Measurement) because
 this will determine how the data is shaped and which features you want to extract from it. Therefore, the base class
 should be extended as explained in this tutorial:
 
-- [Implement an Analysis](https://cohesivm.readthedocs.io//tutorials/analysis.html)
+- [Implement an Analysis](https://cohesivm.readthedocs.io/en/latest//tutorials/analysis.html)
 
 However, in the following example, the base class will be used to show the basic functionality.
 
-Since the [``MA8X8``](https://cohesivm.readthedocs.io/reference/interfaces.html#cohesivm.interfaces.MA8X8) interface was used in the previous examples, the dataset should be filled
+Since the [``MA8X8``](https://cohesivm.readthedocs.io/en/latest/reference/interfaces.html#cohesivm.interfaces.MA8X8) interface was used in the previous examples, the dataset should be filled
 with ``data`` accordingly. If you already have an HDF5 file from following the basic usage example ("Test.h5"), then
 this script should do the job:
 
@@ -327,11 +327,11 @@ for contact_id in metadata.contact_ids:
 data, metadata = db.load_dataset(dataset)
 ```
 
-This time, the [``save_data``](https://cohesivm.readthedocs.io/reference/database.html#cohesivm.database.Database.save_data) method was used correctly (contrary to the previous
+This time, the [``save_data``](https://cohesivm.readthedocs.io/en/latest/reference/database.html#cohesivm.database.Database.save_data) method was used correctly (contrary to the previous
 examples) because the provided ``data`` should always be
 a [structured array](https://numpy.org/doc/stable/user/basics.rec.html).
 
-Next, [``functions``](https://cohesivm.readthedocs.io/reference/analysis.html#cohesivm.analysis.Analysis.functions) and [``plots``](https://cohesivm.readthedocs.io/reference/analysis.html#cohesivm.analysis.Analysis.plots) must be defined:
+Next, [``functions``](https://cohesivm.readthedocs.io/en/latest/reference/analysis.html#cohesivm.analysis.Analysis.functions) and [``plots``](https://cohesivm.readthedocs.io/en/latest/reference/analysis.html#cohesivm.analysis.Analysis.plots) must be defined:
 
 ```pycon
 >>> def maximum(contact_id: str) -> float:
@@ -341,15 +341,15 @@ Next, [``functions``](https://cohesivm.readthedocs.io/reference/analysis.html#co
 ```
 
 This approach seems too complex for what the function does, but it makes sense if you consider that this should be
-implemented in a separate [``Analysis``](https://cohesivm.readthedocs.io/reference/analysis.html#cohesivm.analysis.Analysis) class. There, the data is stored as a property and the
-[``functions``](https://cohesivm.readthedocs.io/reference/analysis.html#cohesivm.analysis.Analysis.functions) (i.e., methods) have direct access to it. Due to the use of structured
+implemented in a separate [``Analysis``](https://cohesivm.readthedocs.io/en/latest/reference/analysis.html#cohesivm.analysis.Analysis) class. There, the data is stored as a property and the
+[``functions``](https://cohesivm.readthedocs.io/en/latest/reference/analysis.html#cohesivm.analysis.Analysis.functions) (i.e., methods) have direct access to it. Due to the use of structured
 arrays (which facilitate to store the quantity and the unit alongside the data), the label also needs to be stated
 explicitly. But, again, this will normally be available as a property.
 
-In the following, the class is initialized with and without using the [``Metadata``](https://cohesivm.readthedocs.io/reference/database.html#cohesivm.database.Metadata) from the
+In the following, the class is initialized with and without using the [``Metadata``](https://cohesivm.readthedocs.io/en/latest/reference/database.html#cohesivm.database.Metadata) from the
 dataset. The former approach has the advantage that all available fields could be accessed by the
-[``functions``](https://cohesivm.readthedocs.io/reference/analysis.html#cohesivm.analysis.Analysis.functions), e.g., values that are stored in the
-[``measurement_settings``](https://cohesivm.readthedocs.io/reference/database.html#cohesivm.database.Metadata.measurement_settings).
+[``functions``](https://cohesivm.readthedocs.io/en/latest/reference/analysis.html#cohesivm.analysis.Analysis.functions), e.g., values that are stored in the
+[``measurement_settings``](https://cohesivm.readthedocs.io/en/latest/reference/database.html#cohesivm.database.Metadata.measurement_settings).
 
 ```pycon
 >>> from cohesivm.analysis import Analysis
@@ -361,8 +361,8 @@ dataset. The former approach has the advantage that all available fields could b
 True
 ```
 
-The main usage of the [``Analysis``](https://cohesivm.readthedocs.io/reference/analysis.html#cohesivm.analysis.Analysis), besides providing the framework for
-the [Analysis GUI](https://cohesivm.readthedocs.io//guis/analysis.html), is to quickly generate maps of analysis results:
+The main usage of the [``Analysis``](https://cohesivm.readthedocs.io/en/latest/reference/analysis.html#cohesivm.analysis.Analysis), besides providing the framework for
+the [Analysis GUI](https://cohesivm.readthedocs.io/en/latest//guis/analysis.html), is to quickly generate maps of analysis results:
 
 ```pycon
 >>> analysis.generate_result_maps('Maximum')[0]
@@ -377,16 +377,16 @@ array([[9., 9., 9., 9., 9., 9., 9., 9.],
 ```
 
 As expected, the maximum value of the generated data is placed in a 2D numpy array on locations corresponding to
-the [``contact_positions``](https://cohesivm.readthedocs.io/reference/Interface.html#interfaces.Interface.contact_positions).
+the [``contact_positions``](https://cohesivm.readthedocs.io/en/latest/reference/Interface.html#interfaces.Interface.contact_positions).
 ## Package Reference <a name="package-reference"></a>
 
-The package reference can be found in the [documentation](https://cohesivm.readthedocs.io/).
+The package reference can be found in the [documentation](https://cohesivm.readthedocs.io/en/latest/).
 
 ## Contributing <a name="contributing"></a>
 
 We welcome contributions from the community to make COHESIVM better! If you'd like to contribute an implementation 
-of a [``Device``](https://cohesivm.readthedocs.io/reference/devices.html#cohesivm.devices.Device), an [``Interface``](https://cohesivm.readthedocs.io/reference/interfaces.html#cohesivm.interfaces.Interface), 
-a [``Measurement``](https://cohesivm.readthedocs.io/reference/measurements.html#cohesivm.measurements.Measurement) or an [``Analysis``](https://cohesivm.readthedocs.io/reference/analysis.html#cohesivm.analysis.Analysis), please follow these steps:
+of a [``Device``](https://cohesivm.readthedocs.io/en/latest/reference/devices.html#cohesivm.devices.Device), an [``Interface``](https://cohesivm.readthedocs.io/en/latest/reference/interfaces.html#cohesivm.interfaces.Interface), 
+a [``Measurement``](https://cohesivm.readthedocs.io/en/latest/reference/measurements.html#cohesivm.measurements.Measurement) or an [``Analysis``](https://cohesivm.readthedocs.io/en/latest/reference/analysis.html#cohesivm.analysis.Analysis), please follow these steps:
 
 1. Fork the repository to your own GitHub account.
 2. Clone your forked repository to your local machine.
@@ -398,7 +398,7 @@ a [``Measurement``](https://cohesivm.readthedocs.io/reference/measurements.html#
 8. Open a pull request to the main repository, describing the changes and why they should be merged.
 
 Please make sure to follow the project's structure. The best way to start is to have a look at the tutorials given in 
-the [documentation](https://cohesivm.readthedocs.io/). Also, don't forget to write tests for your newly implemented feature which may requires a new custom 
+the [documentation](https://cohesivm.readthedocs.io/en/latest/). Also, don't forget to write tests for your newly implemented feature which may requires a new custom 
 marker in the ``conftest.py`` (e.g., if you implement a physical device for which the tests will always fail if it is 
 not connected).
 
