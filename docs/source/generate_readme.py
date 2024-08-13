@@ -8,7 +8,7 @@ with open('../pyproject.toml', 'rb') as f:
     config = tomli.load(f)
 
 
-def reformat_line(line, codeblock, depth):
+def reformat_line(line, codeblock, admonition, depth):
     base_link = config['project']['urls']['Documentation']
     while True:
         match = re.search('{(\\S+)}`(\\S+|.+<\\S+>)`', line)
@@ -36,7 +36,16 @@ def reformat_line(line, codeblock, depth):
     if not codeblock:
         if line.startswith('#'):
             line = depth * '#' + line
-    return line, codeblock
+    if re.search('````', line):
+        admonition = not admonition
+        if admonition:
+            match = re.search('````{(\\S+)}', line)
+            line = line.replace(match[0], f'[!{match[1].upper()}]')
+        else:
+            line = ''
+    if admonition:
+        line = '> ' + line
+    return line, codeblock, admonition
 
 
 def generate_readme(input_file, output_file):
@@ -45,6 +54,7 @@ def generate_readme(input_file, output_file):
     templatedir = os.path.dirname(input_file)
     pattern = r'<!---\s*(.*?)\s*-->'
     codeblock = False
+    admonition = False
 
     with open(input_file, 'r') as file1:
         for line1 in file1:
@@ -56,13 +66,13 @@ def generate_readme(input_file, output_file):
                         if match2:
                             with open(f'{templatedir}/../{match2.group(1)}', 'r') as file3:
                                 for line3 in file3:
-                                    line3, codeblock = reformat_line(line3, codeblock, 2)
+                                    line3, codeblock, admonition = reformat_line(line3, codeblock, admonition, 2)
                                     readme_content.append(line3)
                         else:
-                            line2, codeblock = reformat_line(line2, codeblock, 1)
+                            line2, codeblock, admonition = reformat_line(line2, codeblock, admonition, 1)
                             readme_content.append(line2)
             else:
-                line1, codeblock = reformat_line(line1, codeblock, 0)
+                line1, codeblock, admonition = reformat_line(line1, codeblock, admonition, 0)
                 readme_content.append(line1)
 
     with open(output_file, 'w') as file:

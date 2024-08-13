@@ -9,15 +9,18 @@ pip install cohesivm
 
 This command will download and install the latest stable version of COHESIVM and its core dependencies.
 
-If you want to use the Graphical User Interfaces inside your [Jupyter](https://jupyter.org/) environment, make sure to 
-specify the ``gui`` extra:
+````{important}
+
+If you want to use the GUIs inside your [Jupyter](https://jupyter.org/) environment, make sure to specify the 
+``gui`` extra:
 
 ```console
 pip install cohesivm[gui]
 ```
+````
 
-Further extras exist for the implemented devices and for developers (refer to the ``pyproject.toml`` in the source 
-files to get a listing of all available optional dependencies).
+Further extras exist for the implemented devices and for developers (refer to the ``pyproject.toml`` to get a listing 
+of all available optional dependencies).
 
 ## Cloning from GitHub
 If you want to install the development version of the package from the GitHub repository, follow these steps:
