@@ -1,6 +1,9 @@
 name: Tests
 
-on: [push]
+on:
+  workflow_run:
+    workflows: [ 'Documentation' ]
+    types: [ completed ]
 
 jobs:
   build:
