@@ -50,17 +50,17 @@ implemented while COHESIVM takes care of the experimental workflow and data coll
 Additionally, the package provides graphical user interfaces, allowing users with less 
 programming experience to execute experiments and analyze the collected data.
 
-There is a number of tools available in the public domain which aim to provide control 
-over measurement equipment [@pernstich2012instrument, @sweepme, @weber2021pymodaq, 
-@fuchs2024nomad]. But they rather focus on providing graphical user interfaces which 
-may limit or complicate the use outside a traditional approach. Certainly, there also 
-exist Python APIs that provide experiment control and data collection, with ``bluesky`` 
-being one of the foremost examples [@allan2019bluesky]. However, COHESIVM stands out 
-for its simplicity and targeted application in combinatorial experiments. Furthermore, 
-existing APIs may be interfaced with COHESIVM to easily implement a new device.
+COHESIVM stands out for its straightforward design and the ease with which it can be 
+interfaced with existing APIs to implement new devices seamlessly. While there are a number 
+of tools available in the public domain that provide control over measurement equipment 
+[@pernstich2012instrument; @sweepme2023; @weber2021pymodaq; @fuchs2024nomad], many of these 
+tools focus primarily on graphical user interfaces which can limit their flexibility. Python 
+APIs, such as ``bluesky`` [@allan2019bluesky], do offer experiment control and data collection 
+capabilities. However, COHESIVM's advantage lies in its simplicity and targeted application in 
+combinatorial experiments.
 
-So far, COHESIVM has been used for the investigation of oxide solar cells where it 
-enables to quickly screen a matrix of 8&nbsp;×&nbsp;8 pixels on a single substrate 
+So far, COHESIVM has been used for the investigation of oxide semiconductor heterojunctions where 
+it enables to quickly screen a matrix of 8&nbsp;×&nbsp;8 pixels on a single substrate 
 (25&nbsp;mm × 25&nbsp;mm) [@wolf2024unpublished]. The main branch of the GitHub repository 
 includes the implemented components and hardware documentation related to this work.
 
