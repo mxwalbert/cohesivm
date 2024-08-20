@@ -297,6 +297,7 @@ The [``Database``](https://cohesivm.readthedocs.io/en/latest/reference/database.
 [``settings``](https://cohesivm.readthedocs.io/en/latest/reference/measurements.html#cohesivm.measurements.Measurement.settings) of the [``Measurement``](https://cohesivm.readthedocs.io/en/latest/reference/measurements.html#cohesivm.measurements.Measurement). Check out the 
 documentation of the [``filter_by_settings``](https://cohesivm.readthedocs.io/en/latest/reference/database.html#cohesivm.database.Database.filter_by_settings) and 
 [``filter_by_settings_batch``](https://cohesivm.readthedocs.io/en/latest/reference/database.html#cohesivm.database.Database.filter_by_settings_batch) to learn more.
+
 ### Analyse the Results
 
 The [``Analysis``](https://cohesivm.readthedocs.io/en/latest/reference/analysis.html#cohesivm.analysis.Analysis) is tightly bound with the [``Measurement``](https://cohesivm.readthedocs.io/en/latest/reference/measurements.html#cohesivm.measurements.Measurement) because
@@ -382,34 +383,14 @@ array([[9., 9., 9., 9., 9., 9., 9., 9.],
 
 As expected, the maximum value of the generated data is placed in a 2D numpy array on locations corresponding to
 the [``contact_positions``](https://cohesivm.readthedocs.io/en/latest/reference/Interface.html#interfaces.Interface.contact_positions).
+
 ## Package Reference <a name="package-reference"></a>
 
 The package reference can be found in the [documentation](https://cohesivm.readthedocs.io/en/latest/).
 
-## Contributing <a name="contributing"></a>
+### Contributing <a name="contributing"></a>
 
-We welcome contributions from the community to make COHESIVM better! If you'd like to contribute an implementation 
-of a [``Device``](https://cohesivm.readthedocs.io/en/latest/reference/devices.html#cohesivm.devices.Device), an [``Interface``](https://cohesivm.readthedocs.io/en/latest/reference/interfaces.html#cohesivm.interfaces.Interface), 
-a [``Measurement``](https://cohesivm.readthedocs.io/en/latest/reference/measurements.html#cohesivm.measurements.Measurement) or an [``Analysis``](https://cohesivm.readthedocs.io/en/latest/reference/analysis.html#cohesivm.analysis.Analysis), please follow these steps:
-
-1. Fork the repository to your own GitHub account.
-2. Clone your forked repository to your local machine.
-3. Create a new branch for your new component: git checkout -b my-new-component.
-4. Make your changes and ensure the code passes existing tests.
-5. Add new tests for your changes, if applicable.
-6. Commit your changes with clear and concise messages.
-7. Push your branch to your forked repository: git push origin my-new-feature.
-8. Open a pull request to the main repository, describing the changes and why they should be merged.
-
-Please make sure to follow the project's structure. The best way to start is to have a look at the tutorials given in 
-the [documentation](https://cohesivm.readthedocs.io/en/latest/). Also, don't forget to write tests for your newly implemented feature which may requires a new custom 
-marker in the ``conftest.py`` (e.g., if you implement a physical device for which the tests will always fail if it is 
-not connected).
-
-You may also contribute by submitting feature requests, bugs and other issues over GitHub.
-
-Thank you for your contributions!
-
+The contributing guidelines can be found [here](CONTRIBUTING.md).
 
 ## License <a name="license"></a>
 The source code of this project is licensed under the [MIT license](LICENSE), and the hardware design and schematics 
