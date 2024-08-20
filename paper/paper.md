@@ -53,11 +53,11 @@ programming experience to execute experiments and analyze the collected data.
 COHESIVM stands out for its straightforward design and the ease with which it can be 
 interfaced with existing APIs to implement new devices seamlessly. While there are a number 
 of tools available in the public domain that provide control over measurement equipment 
-[@pernstich2012instrument; @sweepme2023; @weber2021pymodaq; @fuchs2024nomad], many of these 
-tools focus primarily on graphical user interfaces which can limit their flexibility. Python 
-APIs, such as ``bluesky`` [@allan2019bluesky], do offer experiment control and data collection 
-capabilities. However, COHESIVM's advantage lies in its simplicity and targeted application in 
-combinatorial experiments.
+[@pernstich2012instrument; @weber2021pymodaq; @fuchs2024nomad], many of these tools focus 
+primarily on graphical user interfaces which can limit their flexibility. Python APIs, such 
+as ``bluesky`` [@allan2019bluesky], do offer experiment control and data collection capabilities. 
+However, COHESIVM's advantage lies in its simplicity and targeted application in combinatorial 
+experiments.
 
 So far, COHESIVM has been used for the investigation of oxide semiconductor heterojunctions where 
 it enables to quickly screen a matrix of 8&nbsp;×&nbsp;8 pixels on a single substrate 
