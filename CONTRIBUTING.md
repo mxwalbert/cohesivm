@@ -17,17 +17,16 @@ please follow these steps:
     ```console
     python -m pytest
     ```
-5. Add new tests for your changes, if applicable.
-   > [!IMPORTANT]
-   > 
-   > This may require a new custom marker in the ``conftest.py``. E.g., if you implement new hardware which should only 
-   > be tested if it is physically connected.
-6. Commit your changes with clear and concise messages.
-7. Push your branch to your forked repository:
+5. Add new tests for your changes, if applicable.  
+   *⚠ This may require a new custom marker in the [``conftest.py``](test/conftest.py). E.g., if you implement new hardware which should only
+   be tested if it is physically connected.*
+   
+7. Commit your changes with clear and concise messages.
+8. Push your branch to your forked repository:
     ```console
     git push origin my-new-component
     ```
-8. [Open a pull request](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request-from-a-fork) to the main repository, describing the changes and why they should be merged.
+9. [Open a pull request](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request-from-a-fork) to the main repository, describing the changes and why they should be merged.
 
 Please make sure to follow the project's structure. The best way to start is to have a look at the tutorials given in 
 the [documentation](https://cohesivm.readthedocs.io/en/latest/).
