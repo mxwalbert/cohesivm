@@ -89,8 +89,10 @@ a config parser which allows to access these values, e.g.:
 Dow, John
 ```
 
-A working file with the implemented interfaces and devices can be copied from the GitHub repository, or you can create
-your own from this template:
+#### Template
+
+[A preconfigured file](https://github.com/mxwalbert/cohesivm/blob/main/config.ini) with the currently implemented 
+interfaces and devices can be copied from the repository, or you can create your own from this template:
 
 ```ini
 # This file is used to configure the project as well as the devices and interfaces (e.g., COM ports, addresses, ...).
@@ -126,6 +128,49 @@ timeout = 0.1
 # ---------------------------------------------------------------------------------------------------------------------
 ```
 
+The names of the sections (e.g., ``NAME_OF_USB_INTERFACE``) must be unique but can be chosen freely since they are 
+referenced manually. The options (e.g., ``com_port``), on the other hand, should follow the signature of the class 
+constructor to use them efficiently. For example, an [``Interface``](https://cohesivm.readthedocs.io/en/latest/reference/interfaces.html#cohesivm.interfaces.Interface) implementation 
+``DemoInterface`` which requires the ``com_port`` parameter could be initialized using the configuration template 
+from above:
+
+```python
+interface = DemoInterface(**config.get_section('NAME_OF_USB_INTERFACE'))
+```
+
+#### Example
+
+In a common scenario, you probably want to configure multiple devices to use them at once. Let's consider the case 
+where you need two [``OssilaX200``](https://cohesivm.readthedocs.io/en/latest/reference/devices.html#cohesivm.devices.ossila.OssilaX200) devices which are both connected via USB. Then, in the 
+``DEVICES`` part of the configuration, you would define two distinctive sections and set the required ``address`` 
+option:
+
+```ini
+# DEVICES -------------------------------------------------------------------------------------------------------------
+
+[OssilaX200_1]
+address = COM4
+
+[OssilaX200_2]
+address = COM5
+
+# ---------------------------------------------------------------------------------------------------------------------
+```
+
+To initialize the devices, you could do something similar to the [Basic Usage](#basic-usage) 
+example:
+
+
+```python
+from cohesivm import config
+from cohesivm.devices.ossila import OssilaX200
+smu1 = OssilaX200.VoltageSMUChannel()
+device1 = OssilaX200.OssilaX200(channels=[smu1], **config.get_section('OssilaX200_1'))
+smu2 = OssilaX200.VoltageSMUChannel()
+device2 = OssilaX200.OssilaX200(channels=[smu2], **config.get_section('OssilaX200_2'))
+```
+
+<a name="basic-usage"></a>
 ### Basic Usage
 
 With working implementations of the main components ([``Device``](https://cohesivm.readthedocs.io/en/latest/reference/devices.html#cohesivm.devices.Device),
