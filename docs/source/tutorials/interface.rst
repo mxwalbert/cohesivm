@@ -1,10 +1,11 @@
 Implement an Interface
 ======================
 
+.. include:: ../_snippets/important_contribute.rst
+
 This tutorial will guide you through the process of implementing a new contact interface following
 the :class:`~cohesivm.interfaces.Interface` abstract base class. To simulate a realistic use case, the tutorials are
 based on the measurement of the sheet resistance and resistivity of materials using a four-point probe.
-
 
 Interface Class
 ---------------

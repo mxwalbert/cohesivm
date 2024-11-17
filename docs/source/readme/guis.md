@@ -1,4 +1,5 @@
-# Graphical User Interfaces <a name="graphical-user-interfaces"></a>
+<a name="graphical-user-interfaces"></a>
+# Graphical User Interfaces
 
 If you work with [Jupyter](https://jupyter.org/), you may use the Graphical User Interfaces (GUIs) which are implemented
 in the form of [Jupyter Widgets](https://ipywidgets.readthedocs.io/en/stable/).

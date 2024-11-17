@@ -25,11 +25,15 @@ def reformat_line(line, codeblock, admonition, depth):
                 label = 'documentation'
                 link = ''
             else:
-                label, link = target[:-1].split('<')
+                label, link = target[:-1].split('</')
                 link = f'{link}.html'
+        elif role == 'octicon':
+            line = line.replace(f'{match[0]} ', '')
+            break
         else:
             raise NotImplementedError(f'The role {role} is not implemented.')
-        link_element = f'[{label}]({base_link}/{link})'
+        full_link = f'{base_link}/{link}' if label != 'Basic Usage' else '#basic-usage'
+        link_element = f'[{label}]({full_link})'
         line = line[:match.span()[0]] + link_element + line[match.span()[1]:]
     if re.search('```', line):
         codeblock = not codeblock

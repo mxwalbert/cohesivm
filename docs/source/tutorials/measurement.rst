@@ -1,6 +1,8 @@
 Implement a Measurement
 =======================
 
+.. include:: ../_snippets/important_contribute.rst
+
 This tutorial will guide you through the process of implementing a new measurement procedure following
 the :class:`~cohesivm.measurements.Measurement` abstract base class. To simulate a realistic use case, the tutorials
 are based on the measurement of the sheet resistance and resistivity of materials using a four-point probe.
@@ -9,7 +11,6 @@ Here, we want to implement a routine which can be used to obtain the data for th
 Usually, you would only need a single datapoint but in some materials, e.g., semiconductors, you might observe a
 current dependency of the sheet resistance. This gives us the possibility to actually collect arrays of datapoints
 which is more application-oriented this tutorial as well as for the :doc:`/tutorials/analysis` tutorial.
-
 
 Measurement Class
 -----------------

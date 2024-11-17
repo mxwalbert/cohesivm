@@ -30,8 +30,12 @@ different measurement devices and routines. These components are cohesively put 
 - [Graphical User Interfaces](#graphical-user-interfaces)
 - [Examples](#examples)
 - [Package Reference](#package-reference)
-- [Contributing](#contributing)
 - [License](#license)
+- [Contributing](#contributing)
+- [Contact](#contact)
+
+<a name="getting-started"></a>
+## Getting Started
 
 ## Getting Started <a name="getting-started"></a>
 
@@ -384,14 +388,25 @@ array([[9., 9., 9., 9., 9., 9., 9., 9.],
 As expected, the maximum value of the generated data is placed in a 2D numpy array on locations corresponding to
 the [``contact_positions``](https://cohesivm.readthedocs.io/en/latest/reference/Interface.html#interfaces.Interface.contact_positions).
 
-## Package Reference <a name="package-reference"></a>
+<a name="package-reference"></a>
+## Package Reference
 
 The package reference can be found in the [documentation](https://cohesivm.readthedocs.io/en/latest/).
 
-### Contributing <a name="contributing"></a>
+<a name="license"></a>
+## License
+The source code of this project is licensed under the [MIT license](LICENSE), and the hardware design and schematics 
+are licensed under the [CERN OHL v2 Permissive license](hardware/LICENSE).
+
+<a name="contributing"></a>
+## Contributing
 
 The contributing guidelines can be found [here](CONTRIBUTING.md).
 
-## License <a name="license"></a>
-The source code of this project is licensed under the [MIT license](LICENSE), and the hardware design and schematics 
-are licensed under the [CERN OHL v2 Permissive license](hardware/LICENSE).
+<a name="contact"></a>
+## Contact
+
+This project is developed by AIT Austrian Institute of Technology and TU Wien.
+
+For questions, feedback, or support regarding COHESIVM, feel free to [open an issue](https://github.com/mxwalbert/cohesivm/issues) 
+or reach out via email at [maximilian.wolf@ait.ac.at](mailto:maximilian.wolf@ait.ac.at?subject=COHESIVM).

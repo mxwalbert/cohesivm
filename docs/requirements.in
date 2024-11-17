@@ -1,6 +1,7 @@
 sphinx~=7.3.7
 myst-parser~=3.0.1
 sphinx-rtd-theme~=2.0.0
+sphinx-design
 numpy<2.0
 h5py
 matplotlib

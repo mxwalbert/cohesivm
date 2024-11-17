@@ -53,6 +53,13 @@ Learn more about the project on `GitHub <https://github.com/mxwalbert/cohesivm>`
 
 .. toctree::
    :maxdepth: 1
+   :caption: Getting Involved
+
+   /getting_involved/contributing
+   /getting_involved/contact
+
+.. toctree::
+   :maxdepth: 1
    :caption: Package Reference
 
    /reference/experiment

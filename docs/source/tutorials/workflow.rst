@@ -1,5 +1,5 @@
-Complete Workflow
-=================
+Complete GUI Workflow
+=====================
 
 In this tutorial, we will use the components of the four point probe measurement which we implemented in the previous
 tutorials and put it to the test by running a complete workflow in the graphical user interfaces.
@@ -8,11 +8,14 @@ tutorials and put it to the test by running a complete workflow in the graphical
 Environment
 -----------
 
+.. include:: ../_snippets/important_gui_extra.rst
+
 We will be working in Jupyter and need to put together the implemented components (:class:`~cohesivm.devices.Device`,
 :class:`~cohesivm.interfaces.Interface`, and :class:`~cohesivm.measurements.Measurement`) in
 :doc:`/tutorials/workflow/fpp_components`, the :class:`~cohesivm.analysis.Analysis` in
 :doc:`/tutorials/workflow/fpp_analysis`, as well as the mimetic :doc:`/tutorials/workflow/fpp_connect` module.
-Here is the recommended folder structure:
+
+Here is the recommended test folder structure:
 
 .. code-block::
 
