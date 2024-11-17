@@ -37,7 +37,25 @@ different measurement devices and routines. These components are cohesively put 
 <a name="getting-started"></a>
 ## Getting Started
 
-## Getting Started <a name="getting-started"></a>
+### Dependencies
+
+The current core version of COHESIVM is tested for Python 3.9–3.12 and requires the following dependencies:
+
+- h5py (~=3.8)
+- numpy (~=1.21)
+- matplotlib (~=3.7)
+- tqdm (~=4.65)
+
+Apart from the core package, [extras](https://packaging.python.org/en/latest/tutorials/installing-packages/#installing-extras) 
+exist for modules with additional dependencies (check the [``pyproject.toml``](https://github.com/mxwalbert/cohesivm/blob/main/pyproject.toml) for a complete listing):
+
+| Extra   | Module                    | Dependency       |
+|---------|---------------------------|------------------|
+| gui     | cohesivm.gui              | bqplot~=0.12     |
+| ma8x8   | cohesivm.interfaces.ma8x8 | pyserial~=3.5    |
+| ossila  | cohesivm.devices.ossila   | xtralien~=2.10   |
+| agilent | cohesivm.devices.agilent  | pyvisa~=1.13     |
+| full    | –                         | *all from above* |
 
 ### Installation
 
@@ -58,9 +76,6 @@ This command will download and install the latest stable version of COHESIVM and
 > ```console
 > pip install cohesivm[gui]
 > ```
-
-Further extras exist for the implemented devices and for developers (refer to the ``pyproject.toml`` to get a listing 
-of all available optional dependencies).
 
 #### Cloning from GitHub
 If you want to install the development version of the package from the GitHub repository, follow these steps:
@@ -173,6 +188,15 @@ device2 = OssilaX200.OssilaX200(channels=[smu2], **config.get_section('OssilaX20
 <a name="basic-usage"></a>
 ### Basic Usage
 
+> [!IMPORTANT]
+> If you only installed the core package, the following example will raise import errors from missing dependencies. 
+> To use the [``Agilent4156C``](https://cohesivm.readthedocs.io/en/latest/reference/devices.html#cohesivm.devices.agilent.Agilent4156C), [``MA8X8``](https://cohesivm.readthedocs.io/en/latest/reference/interfaces.html#cohesivm.interfaces.ma8x8.MA8X8), and 
+> [``OssilaX200``](https://cohesivm.readthedocs.io/en/latest/reference/devices.html#cohesivm.devices.ossila.OssilaX200) classes, you need to install the ``agilent``, ``ma8x8``, and ``ossila`` 
+> extras, respectively. To add all dependencies at once, install the ``full`` extra with this command:
+> ```console
+> pip install cohesivm[full]
+> ```
+
 With working implementations of the main components ([``Device``](https://cohesivm.readthedocs.io/en/latest/reference/devices.html#cohesivm.devices.Device),
 [``Interface``](https://cohesivm.readthedocs.io/en/latest/reference/interfaces.html#cohesivm.interfaces.Interface), [``Measurement``](https://cohesivm.readthedocs.io/en/latest/reference/measurements.html#cohesivm.measurements.Measurement)), setting up and running an
 experiment only takes a few lines of code:
@@ -180,11 +204,11 @@ experiment only takes a few lines of code:
 ```python
 from cohesivm import config
 from cohesivm.database import Database, Dimensions
-from cohesivm.devices.agilent import Agilent4156C
-from cohesivm.measurements.iv import CurrentVoltageCharacteristic
-from cohesivm.interfaces import MA8X8
 from cohesivm.experiment import Experiment
 from cohesivm.progressbar import ProgressBar
+from cohesivm.devices.agilent import Agilent4156C
+from cohesivm.interfaces import MA8X8
+from cohesivm.measurements.iv import CurrentVoltageCharacteristic
 
 # Create a new or load an existing database
 db = Database('Test.h5')

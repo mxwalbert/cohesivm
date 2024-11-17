@@ -21,6 +21,7 @@ Learn more about the project on `GitHub <https://github.com/mxwalbert/cohesivm>`
    :maxdepth: 1
    :caption: Getting Started
 
+   /getting_started/dependencies
    /getting_started/installation
    /getting_started/configuration
    /getting_started/basic_usage

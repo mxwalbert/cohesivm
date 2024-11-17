@@ -1,5 +1,15 @@
 # Basic Usage
 
+````{important}
+If you only installed the core package, the following example will raise import errors from missing dependencies. 
+To use the {class}`~cohesivm.devices.agilent.Agilent4156C`, {class}`~cohesivm.interfaces.ma8x8.MA8X8`, and 
+{class}`~cohesivm.devices.ossila.OssilaX200` classes, you need to install the ``agilent``, ``ma8x8``, and ``ossila`` 
+extras, respectively. To add all dependencies at once, install the ``full`` extra with this command:
+```console
+pip install cohesivm[full]
+```
+````
+
 With working implementations of the main components ({class}`~cohesivm.devices.Device`,
 {class}`~cohesivm.interfaces.Interface`, {class}`~cohesivm.measurements.Measurement`), setting up and running an
 experiment only takes a few lines of code:
@@ -7,11 +17,11 @@ experiment only takes a few lines of code:
 ```python
 from cohesivm import config
 from cohesivm.database import Database, Dimensions
-from cohesivm.devices.agilent import Agilent4156C
-from cohesivm.measurements.iv import CurrentVoltageCharacteristic
-from cohesivm.interfaces import MA8X8
 from cohesivm.experiment import Experiment
 from cohesivm.progressbar import ProgressBar
+from cohesivm.devices.agilent import Agilent4156C
+from cohesivm.interfaces import MA8X8
+from cohesivm.measurements.iv import CurrentVoltageCharacteristic
 
 # Create a new or load an existing database
 db = Database('Test.h5')

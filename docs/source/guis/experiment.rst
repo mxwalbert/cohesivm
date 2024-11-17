@@ -3,8 +3,10 @@ Experiment GUI
 
 This Graphical User Interface enables to monitor and control an experiment.
 
-Setup
------
+Environment
+-----------
+
+.. include:: ../_snippets/important_gui_extra.rst
 
 We use the code from the test of the :class:`~cohesivm.gui.ExperimentGUI` for demonstrating its functionality:
 
