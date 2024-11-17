@@ -70,7 +70,7 @@ If you want to install the development version of the package from the GitHub re
     ```
 3. **Install** the package and its dependencies:
     ```console
-    pip install .
+    pip install .[dev]
     ```
 
 ### Configuration

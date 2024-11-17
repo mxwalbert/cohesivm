@@ -19,9 +19,6 @@ pip install cohesivm[gui]
 ```
 ````
 
-Further extras exist for the implemented devices and for developers (refer to the ``pyproject.toml`` to get a listing 
-of all available optional dependencies).
-
 ## Cloning from GitHub
 If you want to install the development version of the package from the GitHub repository, follow these steps:
 1. **Clone** the repository to your local machine:
@@ -34,5 +31,5 @@ If you want to install the development version of the package from the GitHub re
     ```
 3. **Install** the package and its dependencies:
     ```console
-    pip install .
+    pip install .[dev]
     ```
