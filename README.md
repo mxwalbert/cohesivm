@@ -259,7 +259,11 @@ below.
 
 Detailed guides to work with the GUIs can be found in the [documentation](https://cohesivm.readthedocs.io/en/latest/).
 
-## Examples <a name="examples"></a>
+<a name="examples"></a>
+## Examples
+
+> [!NOTE]
+> For a practical example, read the [Real-World Example](https://cohesivm.readthedocs.io/en/latest/tutorials/real-world_example.html).
 
 ### Run an Experiment
 

@@ -28,8 +28,13 @@ dl {
     box-shadow: rgba(0, 0, 0, 0.16) 0px 3px 6px, rgba(0, 0, 0, 0.23) 0px 3px 6px;
 }
 
+.citation:target {
+    position:relative;
+}
+
 .py > dt:target:before,
-.py.class:has(> dt:target) + .data > dt:before {
+.py.class:has(> dt:target) + .data > dt:before,
+.citation:target:before {
     content: '';
     width: 0;
     height: 0;

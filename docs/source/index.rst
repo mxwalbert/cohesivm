@@ -45,6 +45,7 @@ Learn more about the project on `GitHub <https://github.com/mxwalbert/cohesivm>`
    :maxdepth: 1
    :caption: Tutorials
 
+   /tutorials/real-world_example
    /tutorials/device
    /tutorials/interface
    /tutorials/measurement
