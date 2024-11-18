@@ -2,11 +2,11 @@
 
 ## Introduction
 
-The COHESIVM Python package provides a versatile framework for conducting combinatorial voltaic measurements in
-scientific research and development. In order to enable a broad range of electrical and electrochemical analysis
-methods, COHESIVM uses a generalized design of the main components which facilitates the extension and adaptation to
-different measurement devices and routines. These components are cohesively put together in an
-[``Experiment``](https://cohesivm.readthedocs.io/en/latest/reference/experiment.html#cohesivm.experiment.Experiment) class which runs compatibility checks and executes the actual measurements.
+The COHESIVM Python package provides a generalized framework for conducting combinatorial voltaic measurements in
+scientific research and development. The modular architecture enables researchers to adapt it to diverse experimental 
+setups by extending its components to support custom configurations. These components are cohesively put together in an
+[``Experiment``](https://cohesivm.readthedocs.io/en/latest/reference/experiment.html#cohesivm.experiment.Experiment) class which runs compatibility checks, manages data storage, and 
+executes the measurements.
 
 ### Key Features:
 
@@ -14,9 +14,12 @@ different measurement devices and routines. These components are cohesively put 
   ([``Device``](https://cohesivm.readthedocs.io/en/latest/reference/devices.html#cohesivm.devices.Device)), contacting interfaces ([``Interface``](https://cohesivm.readthedocs.io/en/latest/reference/interfaces.html#cohesivm.interfaces.Interface)), and measurement
   routines ([``Measurement``](https://cohesivm.readthedocs.io/en/latest/reference/measurements.html#cohesivm.measurements.Measurement)) are abstracted into interchangeable units. This modular
   architecture enhances flexibility in experimental setups and makes it easy to add new component implementations.
+  The tutorials in the [documentation](https://cohesivm.readthedocs.io/en/latest/) provide an extensive description of implementing custom components.
 - **Combinatorial Flexibility:** By abstracting the class for the contacting interface, COHESIVM enables diverse
-  configurations for sample investigation. Researchers can simply implement their combinatorial sample design or even
-  interface a robotic contacting system.
+  configurations for sample investigation. The [MA8X8 measurement array](https://github.com/mxwalbert/cohesivm/tree/main/hardware/ma8x8), as implemented in the current core 
+  version, is only one example for an electrode contact array. Researchers can add custom implementations of the 
+  [``Interface``](https://cohesivm.readthedocs.io/en/latest/reference/interfaces.html#cohesivm.interfaces.Interface) class to support other configurations or, for example, robotic contacting 
+  systems.
 - **Data Handling:** Collected data is stored in a structured [HDF5](https://www.hdfgroup.org/solutions/hdf5/) database
   format using the [``Database``](https://cohesivm.readthedocs.io/en/latest/reference/database.html#cohesivm.database.Database) class, ensuring efficient data management and accessibility.
   [``Metadata``](https://cohesivm.readthedocs.io/en/latest/reference/database.html#cohesivm.database.Metadata) is collected based on the [DCMI standard](http://purl.org/dc/terms/) which is

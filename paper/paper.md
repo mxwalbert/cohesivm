@@ -37,18 +37,27 @@ labor costs [@aspuru2018materials]. Combinatorial and high-throughput methods ar
 instrumental in developing said MAPs, enabling autonomous operation and the generation 
 of large datasets [@maier2007combinatorial]. Therefore, in a previous work, we developed 
 combinatorial deposition and analysis techniques for the discovery of new semiconductor 
-materials [@wolf2023accelerated]. To further advance the portfolio, COHESIVM was created, 
-which facilitates combinatorial analysis of material and device properties.
+materials [@wolf2023accelerated]. To drive further innovation in the field, COHESIVM was 
+created, which facilitates combinatorial analysis of material and device properties 
+through the following key features:
+
+- A **generalized workflow** reduces redundancy and ensures consistency across different 
+  experimental setups.
+- The **modular design** abstracts devices, contact interfaces, and measurement routines 
+  into interchangeable units.
+- **Efficient data handling** is achieved through robust metadata collection and 
+  well-structured storage.
 
 # Statement of need
 
-COHESIVM is a Python package that aims to simplify the process of setting up and 
-executing combinatorial voltaic measurements. It provides researchers with a flexible, 
-modular framework that can be tailored to various experimental needs. Following the 
-well-documented abstract base classes, application-specific components are easily 
-implemented while COHESIVM takes care of the experimental workflow and data collection. 
-Additionally, the package provides graphical user interfaces, allowing users with less 
-programming experience to execute experiments and analyze the collected data.
+COHESIVM is a Python package that aims to streamline the setup and execution of
+combinatorial voltaic measurements. Typically, experimental workflows and data handling 
+are implemented on a use-case basis, which can be time-consuming and error-prone. With 
+COHESIVM however, these foundational features are pre-implemented and designed to be 
+reusable across different scenarios. The package provides a generalized framework, following 
+well-documented abstract base classes, which facilitates the implementation of 
+application-specific components. Additionally, graphical user interfaces allow users with 
+less programming experience to execute experiments and analyze the collected data.
 
 COHESIVM stands out for its straightforward design and the ease with which it can be 
 interfaced with existing APIs to implement new devices seamlessly. While there are a number 
@@ -61,7 +70,19 @@ experiments.
 
 So far, COHESIVM has been used for the investigation of oxide semiconductor heterojunctions where 
 it enables to quickly screen a matrix of 8&nbsp;×&nbsp;8 pixels on a single substrate 
-(25&nbsp;mm × 25&nbsp;mm) [@wolf2024unpublished]. The main branch of the GitHub repository 
-includes the implemented components and hardware documentation related to this work.
+(25&nbsp;mm × 25&nbsp;mm) [@wolf2024unpublished]. The package's documentation provides a 
+[high-level description](https://cohesivm.readthedocs.io/en/latest/tutorials/real-world_example.html) of how COHESIVM was applied in this context. In brief, 
+64 gold pads were sputtered onto the sample using a mask, which is [available in the repository](https://github.com/mxwalbert/cohesivm/tree/main/hardware/ma8x8). 
+Schematics and board files for reproducing the utilized ``MA8X8`` interface are provided
+as well. The sample was mounted on this interface, which was then placed under a solar simulator 
+(Ossila, AAA classification) and connected to the electronic measurement equipment (Agilent 4156C). 
+Employing COHESIVM, the current-voltage characteristics of all 64 pixels were recorded and the
+resulting data was analysed to generate a map of open-circuit voltages.
+
+# Author Contributions
+
+**Maximilian Wolf:** Methodology, Software, Writing - Original Draft. **Selina Götz:** Software, Validation. 
+**Georg K.H. Madsen:** Writing - Review & Editing, Supervision. **Theodoros Dimopoulos:** Conceptualization, 
+Resources, Supervision.
 
 # References
