@@ -70,7 +70,7 @@ experiments.
 
 So far, COHESIVM has been used for the investigation of oxide semiconductor heterojunctions where 
 it enables to quickly screen a matrix of 8&nbsp;×&nbsp;8 pixels on a single substrate 
-(25&nbsp;mm × 25&nbsp;mm) [@wolf2024unpublished]. The package's documentation provides a 
+(25&nbsp;mm × 25&nbsp;mm). The package's documentation provides a 
 [high-level description](https://cohesivm.readthedocs.io/en/latest/tutorials/real-world_example.html) of how COHESIVM was applied in this context. In brief, 
 64 gold pads were sputtered onto the sample using a mask, which is [available in the repository](https://github.com/mxwalbert/cohesivm/tree/main/hardware/ma8x8). 
 Schematics and board files for reproducing the utilized ``MA8X8`` interface are provided
