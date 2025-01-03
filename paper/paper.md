@@ -68,16 +68,16 @@ as ``bluesky`` [@allan2019bluesky], do offer experiment control and data collect
 However, COHESIVM's advantage lies in its simplicity and targeted application in combinatorial 
 experiments.
 
-So far, COHESIVM has been used for the investigation of oxide semiconductor heterojunctions where 
-it enables to quickly screen a matrix of 8&nbsp;×&nbsp;8 pixels on a single substrate 
-(25&nbsp;mm × 25&nbsp;mm). The package's documentation provides a 
-[high-level description](https://cohesivm.readthedocs.io/en/latest/tutorials/real-world_example.html) of how COHESIVM was applied in this context. In brief, 
-64 gold pads were sputtered onto the sample using a mask, which is [available in the repository](https://github.com/mxwalbert/cohesivm/tree/main/hardware/ma8x8). 
+For the investigation of combinatorial optoelectronic devices, COHESIVM includes hardware descriptions
+as well as implemented components which enable to quickly screen a matrix of 8&nbsp;×&nbsp;8 pixels 
+on a single substrate (25&nbsp;mm × 25&nbsp;mm). The package's documentation provides a 
+[high-level description](https://cohesivm.readthedocs.io/en/latest/tutorials/real-world_example.html) of how COHESIVM can be applied in this context. In brief, 
+64 gold pads are sputtered onto the sample using a mask which is [available in the repository](https://github.com/mxwalbert/cohesivm/tree/main/hardware/ma8x8). 
 Schematics and board files for reproducing the utilized ``MA8X8`` interface are provided
-as well. The sample was mounted on this interface, which was then placed under a solar simulator 
+as well. After mounting the sample on this interface, it is placed under a solar simulator 
 (Ossila, AAA classification) and connected to the electronic measurement equipment (Agilent 4156C). 
-Employing COHESIVM, the current-voltage characteristics of all 64 pixels were recorded and the
-resulting data was analysed to generate a map of open-circuit voltages.
+Employing the ``CurrentVoltageCharacteristic`` measurement class, the IV curves of all 64 pixels are 
+recorded and the resulting data yields a map of open-circuit voltages.
 
 # Author Contributions
 
