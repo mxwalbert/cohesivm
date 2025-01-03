@@ -2,11 +2,11 @@
 
 ## Introduction
 
-The COHESIVM Python package provides a versatile framework for conducting combinatorial voltaic measurements in
-scientific research and development. In order to enable a broad range of electrical and electrochemical analysis
-methods, COHESIVM uses a generalized design of the main components which facilitates the extension and adaptation to
-different measurement devices and routines. These components are cohesively put together in an
-[``Experiment``](https://cohesivm.readthedocs.io/en/latest/reference/experiment.html#cohesivm.experiment.Experiment) class which runs compatibility checks and executes the actual measurements.
+The COHESIVM Python package provides a generalized framework for conducting combinatorial voltaic measurements in
+scientific research and development. The modular architecture enables researchers to adapt it to diverse experimental 
+setups by extending its components to support custom configurations. These components are cohesively put together in an
+[``Experiment``](https://cohesivm.readthedocs.io/en/latest/reference/experiment.html#cohesivm.experiment.Experiment) class which runs compatibility checks, manages data storage, and 
+executes the measurements.
 
 ### Key Features:
 
@@ -14,9 +14,12 @@ different measurement devices and routines. These components are cohesively put 
   ([``Device``](https://cohesivm.readthedocs.io/en/latest/reference/devices.html#cohesivm.devices.Device)), contacting interfaces ([``Interface``](https://cohesivm.readthedocs.io/en/latest/reference/interfaces.html#cohesivm.interfaces.Interface)), and measurement
   routines ([``Measurement``](https://cohesivm.readthedocs.io/en/latest/reference/measurements.html#cohesivm.measurements.Measurement)) are abstracted into interchangeable units. This modular
   architecture enhances flexibility in experimental setups and makes it easy to add new component implementations.
+  The tutorials in the [documentation](https://cohesivm.readthedocs.io/en/latest/) provide an extensive description of implementing custom components.
 - **Combinatorial Flexibility:** By abstracting the class for the contacting interface, COHESIVM enables diverse
-  configurations for sample investigation. Researchers can simply implement their combinatorial sample design or even
-  interface a robotic contacting system.
+  configurations for sample investigation. The [MA8X8 measurement array](https://github.com/mxwalbert/cohesivm/tree/main/hardware/ma8x8), as implemented in the current core 
+  version, is only one example for an electrode contact array. Researchers can add custom implementations of the 
+  [``Interface``](https://cohesivm.readthedocs.io/en/latest/reference/interfaces.html#cohesivm.interfaces.Interface) class to support other configurations or, for example, robotic contacting 
+  systems.
 - **Data Handling:** Collected data is stored in a structured [HDF5](https://www.hdfgroup.org/solutions/hdf5/) database
   format using the [``Database``](https://cohesivm.readthedocs.io/en/latest/reference/database.html#cohesivm.database.Database) class, ensuring efficient data management and accessibility.
   [``Metadata``](https://cohesivm.readthedocs.io/en/latest/reference/database.html#cohesivm.database.Metadata) is collected based on the [DCMI standard](http://purl.org/dc/terms/) which is
@@ -30,10 +33,32 @@ different measurement devices and routines. These components are cohesively put 
 - [Graphical User Interfaces](#graphical-user-interfaces)
 - [Examples](#examples)
 - [Package Reference](#package-reference)
-- [Contributing](#contributing)
 - [License](#license)
+- [Contributing](#contributing)
+- [Contact](#contact)
 
-## Getting Started <a name="getting-started"></a>
+<a name="getting-started"></a>
+## Getting Started
+
+### Dependencies
+
+The current core version of COHESIVM is tested for Python 3.9–3.12 and requires the following dependencies:
+
+- h5py (~=3.8)
+- numpy (~=1.21)
+- matplotlib (~=3.7)
+- tqdm (~=4.65)
+
+Apart from the core package, [extras](https://packaging.python.org/en/latest/tutorials/installing-packages/#installing-extras) 
+exist for modules with additional dependencies (check the [``pyproject.toml``](https://github.com/mxwalbert/cohesivm/blob/main/pyproject.toml) for a complete listing):
+
+| Extra   | Module                    | Dependency       |
+|---------|---------------------------|------------------|
+| gui     | cohesivm.gui              | bqplot~=0.12     |
+| ma8x8   | cohesivm.interfaces.ma8x8 | pyserial~=3.5    |
+| ossila  | cohesivm.devices.ossila   | xtralien~=2.10   |
+| agilent | cohesivm.devices.agilent  | pyvisa~=1.13     |
+| full    | –                         | *all from above* |
 
 ### Installation
 
@@ -55,9 +80,6 @@ This command will download and install the latest stable version of COHESIVM and
 > pip install cohesivm[gui]
 > ```
 
-Further extras exist for the implemented devices and for developers (refer to the ``pyproject.toml`` to get a listing 
-of all available optional dependencies).
-
 #### Cloning from GitHub
 If you want to install the development version of the package from the GitHub repository, follow these steps:
 1. **Clone** the repository to your local machine:
@@ -70,7 +92,7 @@ If you want to install the development version of the package from the GitHub re
     ```
 3. **Install** the package and its dependencies:
     ```console
-    pip install .
+    pip install .[dev]
     ```
 
 ### Configuration
@@ -85,8 +107,10 @@ a config parser which allows to access these values, e.g.:
 Dow, John
 ```
 
-A working file with the implemented interfaces and devices can be copied from the GitHub repository, or you can create
-your own from this template:
+#### Template
+
+[A preconfigured file](https://github.com/mxwalbert/cohesivm/blob/main/config.ini) with the currently implemented 
+interfaces and devices can be copied from the repository, or you can create your own from this template:
 
 ```ini
 # This file is used to configure the project as well as the devices and interfaces (e.g., COM ports, addresses, ...).
@@ -122,7 +146,59 @@ timeout = 0.1
 # ---------------------------------------------------------------------------------------------------------------------
 ```
 
+The names of the sections (e.g., ``NAME_OF_USB_INTERFACE``) must be unique but can be chosen freely since they are 
+referenced manually. The options (e.g., ``com_port``), on the other hand, should follow the signature of the class 
+constructor to use them efficiently. For example, an [``Interface``](https://cohesivm.readthedocs.io/en/latest/reference/interfaces.html#cohesivm.interfaces.Interface) implementation 
+``DemoInterface`` which requires the ``com_port`` parameter could be initialized using the configuration template 
+from above:
+
+```python
+interface = DemoInterface(**config.get_section('NAME_OF_USB_INTERFACE'))
+```
+
+#### Example
+
+In a common scenario, you probably want to configure multiple devices to use them at once. Let's consider the case 
+where you need two [``OssilaX200``](https://cohesivm.readthedocs.io/en/latest/reference/devices.html#cohesivm.devices.ossila.OssilaX200) devices which are both connected via USB. Then, in the 
+``DEVICES`` part of the configuration, you would define two distinctive sections and set the required ``address`` 
+option:
+
+```ini
+# DEVICES -------------------------------------------------------------------------------------------------------------
+
+[OssilaX200_1]
+address = COM4
+
+[OssilaX200_2]
+address = COM5
+
+# ---------------------------------------------------------------------------------------------------------------------
+```
+
+To initialize the devices, you could do something similar to the [Basic Usage](#basic-usage) 
+example:
+
+
+```python
+from cohesivm import config
+from cohesivm.devices.ossila import OssilaX200
+smu1 = OssilaX200.VoltageSMUChannel()
+device1 = OssilaX200.OssilaX200(channels=[smu1], **config.get_section('OssilaX200_1'))
+smu2 = OssilaX200.VoltageSMUChannel()
+device2 = OssilaX200.OssilaX200(channels=[smu2], **config.get_section('OssilaX200_2'))
+```
+
+<a name="basic-usage"></a>
 ### Basic Usage
+
+> [!IMPORTANT]
+> If you only installed the core package, the following example will raise import errors from missing dependencies. 
+> To use the [``Agilent4156C``](https://cohesivm.readthedocs.io/en/latest/reference/devices.html#cohesivm.devices.agilent.Agilent4156C), [``MA8X8``](https://cohesivm.readthedocs.io/en/latest/reference/interfaces.html#cohesivm.interfaces.ma8x8.MA8X8), and 
+> [``OssilaX200``](https://cohesivm.readthedocs.io/en/latest/reference/devices.html#cohesivm.devices.ossila.OssilaX200) classes, you need to install the ``agilent``, ``ma8x8``, and ``ossila`` 
+> extras, respectively. To add all dependencies at once, install the ``full`` extra with this command:
+> ```console
+> pip install cohesivm[full]
+> ```
 
 With working implementations of the main components ([``Device``](https://cohesivm.readthedocs.io/en/latest/reference/devices.html#cohesivm.devices.Device),
 [``Interface``](https://cohesivm.readthedocs.io/en/latest/reference/interfaces.html#cohesivm.interfaces.Interface), [``Measurement``](https://cohesivm.readthedocs.io/en/latest/reference/measurements.html#cohesivm.measurements.Measurement)), setting up and running an
@@ -131,11 +207,11 @@ experiment only takes a few lines of code:
 ```python
 from cohesivm import config
 from cohesivm.database import Database, Dimensions
-from cohesivm.devices.agilent import Agilent4156C
-from cohesivm.measurements.iv import CurrentVoltageCharacteristic
-from cohesivm.interfaces import MA8X8
 from cohesivm.experiment import Experiment
 from cohesivm.progressbar import ProgressBar
+from cohesivm.devices.agilent import Agilent4156C
+from cohesivm.interfaces import MA8X8
+from cohesivm.measurements.iv import CurrentVoltageCharacteristic
 
 # Create a new or load an existing database
 db = Database('Test.h5')
@@ -210,7 +286,11 @@ below.
 
 Detailed guides to work with the GUIs can be found in the [documentation](https://cohesivm.readthedocs.io/en/latest/).
 
-## Examples <a name="examples"></a>
+<a name="examples"></a>
+## Examples
+
+> [!NOTE]
+> For a practical example, read the [Real-World Example](https://cohesivm.readthedocs.io/en/latest/tutorials/real-world_example.html).
 
 ### Run an Experiment
 
@@ -384,14 +464,25 @@ array([[9., 9., 9., 9., 9., 9., 9., 9.],
 As expected, the maximum value of the generated data is placed in a 2D numpy array on locations corresponding to
 the [``contact_positions``](https://cohesivm.readthedocs.io/en/latest/reference/Interface.html#interfaces.Interface.contact_positions).
 
-## Package Reference <a name="package-reference"></a>
+<a name="package-reference"></a>
+## Package Reference
 
 The package reference can be found in the [documentation](https://cohesivm.readthedocs.io/en/latest/).
 
-### Contributing <a name="contributing"></a>
+<a name="license"></a>
+## License
+The source code of this project is licensed under the [MIT license](LICENSE), and the hardware design and schematics 
+are licensed under the [CERN OHL v2 Permissive license](hardware/LICENSE).
+
+<a name="contributing"></a>
+## Contributing
 
 The contributing guidelines can be found [here](CONTRIBUTING.md).
 
-## License <a name="license"></a>
-The source code of this project is licensed under the [MIT license](LICENSE), and the hardware design and schematics 
-are licensed under the [CERN OHL v2 Permissive license](hardware/LICENSE).
+<a name="contact"></a>
+## Contact
+
+This project is developed by AIT Austrian Institute of Technology and TU Wien.
+
+For questions, feedback, or support regarding COHESIVM, feel free to [open an issue](https://github.com/mxwalbert/cohesivm/issues) 
+or reach out via email at [maximilian.wolf@ait.ac.at](mailto:maximilian.wolf@ait.ac.at?subject=COHESIVM).

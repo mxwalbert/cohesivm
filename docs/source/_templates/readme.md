@@ -12,6 +12,9 @@
 
 <!--- readme/package_reference.md -->
 
+<!--- readme/license.md -->
+
 <!--- readme/contributing.md -->
 
-<!--- readme/license.md -->
+<a name="contact"></a>
+<!--- getting_involved/contact.md -->

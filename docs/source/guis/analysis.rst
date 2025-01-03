@@ -3,8 +3,10 @@ Analysis GUI
 
 This Graphical User Interface enables to plot measurement data and display analysis results.
 
-Setup
------
+Environment
+-----------
+
+.. include:: ../_snippets/important_gui_extra.rst
 
 We use the code from the test of the :class:`~cohesivm.gui.AnalysisGUI` for demonstrating its functionality:
 

@@ -3,5 +3,6 @@
 - [Graphical User Interfaces](#graphical-user-interfaces)
 - [Examples](#examples)
 - [Package Reference](#package-reference)
-- [Contributing](#contributing)
 - [License](#license)
+- [Contributing](#contributing)
+- [Contact](#contact)

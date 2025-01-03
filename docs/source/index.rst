@@ -21,6 +21,7 @@ Learn more about the project on `GitHub <https://github.com/mxwalbert/cohesivm>`
    :maxdepth: 1
    :caption: Getting Started
 
+   /getting_started/dependencies
    /getting_started/installation
    /getting_started/configuration
    /getting_started/basic_usage
@@ -45,11 +46,19 @@ Learn more about the project on `GitHub <https://github.com/mxwalbert/cohesivm>`
    :maxdepth: 1
    :caption: Tutorials
 
+   /tutorials/real-world_example
    /tutorials/device
    /tutorials/interface
    /tutorials/measurement
    /tutorials/analysis
    /tutorials/workflow
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Getting Involved
+
+   /getting_involved/contributing
+   /getting_involved/contact
 
 .. toctree::
    :maxdepth: 1

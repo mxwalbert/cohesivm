@@ -3,8 +3,10 @@ Database GUI
 
 This Graphical User Interface enables to display and filter the contents of a database file.
 
-Setup
------
+Environment
+-----------
+
+.. include:: ../_snippets/important_gui_extra.rst
 
 We use the code from the test of the :class:`~cohesivm.gui.DatabaseGUI` for demonstrating its functionality:
 

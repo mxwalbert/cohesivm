@@ -1,10 +1,11 @@
 Implement a Device
 ==================
 
+.. include:: ../_snippets/important_contribute.rst
+
 This tutorial will guide you through the process of implementing a new device following
 the :class:`~cohesivm.devices.Device` abstract base class. To simulate a realistic use case, the tutorials are based on
 the measurement of the sheet resistance and resistivity of materials using a four-point probe.
-
 
 Channel Classes
 ---------------
