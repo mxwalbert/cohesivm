@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "cohesivm"
-version = "1.0.0"
+version = "1.0.1"
 authors = [
     { name="Maximilian Wolf", email="maximilian.wolf@ait.ac.at" },
     { name="Selina Götz", email="selina.goetz@ait.ac.at" },
