@@ -45,9 +45,9 @@ autodoc_type_aliases = {
     'cohesivm.channels.TChannel': 'cohesivm.channels.TChannel',
     'cohesivm.devices.ossila.OssilaX200.TChannel': 'cohesivm.devices.ossila.OssilaX200.TChannel',
     'cohesivm.devices.agilent.Agilent4156C.TChannel': 'cohesivm.devices.agilent.Agilent4156C.TChannel',
-    'DatabaseValue': 'DatabaseValue',
-    'DatabaseDict': 'DatabaseDict',
-    'Dataset': 'Dataset'
+    'cohesivm.database.DatabaseValue': 'cohesivm.database.DatabaseValue',
+    'cohesivm.database.DatabaseDict': 'cohesivm.database.DatabaseDict',
+    'cohesivm.database.Dataset': 'cohesivm.database.Dataset'
 }
 autodoc_type_hints = 'both'
 add_module_names = False

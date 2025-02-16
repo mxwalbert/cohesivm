@@ -8,9 +8,11 @@ should be extended as explained in this tutorial:
 
 However, in the following example, the base class will be used to show the basic functionality.
 
-Since the {class}`~cohesivm.interfaces.MA8X8` interface was used in the previous examples, the dataset should be filled
-with ``data`` accordingly. If you already have an HDF5 file from following the basic usage example ("Test.h5"), then
-this script should do the job:
+## Generate Data
+
+Since the {class}`~cohesivm.interfaces.MA8X8` interface was used in the previous examples, the initialized
+{class}`~cohesivm.database.Dataset` should be filled with data accordingly. With the HDF5 file from 
+the {doc}`Basic Usage</getting_started/basic_usage>` example, this script should do the job:
 
 ```python
 import numpy as np
@@ -21,7 +23,7 @@ db = Database('Test.h5')
 dataset = db.filter_by_sample_id('test_sample_42')[0]
 metadata = db.load_metadata(dataset)
 
-# create a new data to not interfere with previous examples
+# create a new dataset to not interfere with previous examples
 dataset = db.initialize_dataset(metadata)
 
 # iterate over contact_ids and save data arrays
@@ -32,9 +34,7 @@ for contact_id in metadata.contact_ids:
 data, metadata = db.load_dataset(dataset)
 ```
 
-This time, the {meth}`~cohesivm.database.Database.save_data` method was used correctly (contrary to the previous
-examples) because the provided ``data`` should always be
-a [structured array](https://numpy.org/doc/stable/user/basics.rec.html).
+## Define Functions
 
 Next, {attr}`~cohesivm.analysis.Analysis.functions` and {attr}`~cohesivm.analysis.Analysis.plots` must be defined:
 
@@ -47,9 +47,11 @@ Next, {attr}`~cohesivm.analysis.Analysis.functions` and {attr}`~cohesivm.analysi
 
 This approach seems too complex for what the function does, but it makes sense if you consider that this should be
 implemented in a separate {class}`~cohesivm.analysis.Analysis` class. There, the data is stored as a property and the
-{attr}`~cohesivm.analysis.Analysis.functions` (i.e., methods) have direct access to it. Due to the use of structured
-arrays (which facilitate to store the quantity and the unit alongside the data), the label also needs to be stated
-explicitly. But, again, this will normally be available as a property.
+{attr}`~cohesivm.analysis.Analysis.functions` (i.e., methods) have direct access to it. Due to the use of 
+[structured arrays](https://numpy.org/doc/stable/user/basics.rec.html), the label also needs to be stated explicitly. But, again, this will normally be available as 
+a property of the class.
+
+## With vs. without Metadata
 
 In the following, the class is initialized with and without using the {class}`~cohesivm.database.Metadata` from the
 dataset. The former approach has the advantage that all available fields could be accessed by the
@@ -66,8 +68,11 @@ dataset. The former approach has the advantage that all available fields could b
 True
 ```
 
-The main usage of the {class}`~cohesivm.analysis.Analysis`, besides providing the framework for
-the {doc}`Analysis GUI</guis/analysis>`, is to quickly generate maps of analysis results:
+## Use the Class
+
+The main purposes of the {class}`~cohesivm.analysis.Analysis` are bundling functions for quick data analysis 
+and providing the framework for the {doc}`Analysis GUI</guis/analysis>`. But it is also useful to generate maps 
+of analysis results:
 
 ```pycon
 >>> analysis.generate_result_maps('Maximum')[0]

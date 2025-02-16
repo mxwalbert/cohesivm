@@ -16,5 +16,8 @@
 
 <!--- readme/contributing.md -->
 
+<a name="citation"></a>
+<!--- getting_involved/citation.md -->
+
 <a name="contact"></a>
 <!--- getting_involved/contact.md -->

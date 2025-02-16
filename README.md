@@ -35,6 +35,7 @@ executes the measurements.
 - [Package Reference](#package-reference)
 - [License](#license)
 - [Contributing](#contributing)
+- [Citation](#citation)
 - [Contact](#contact)
 
 <a name="getting-started"></a>
@@ -249,7 +250,8 @@ smu = OssilaX200.VoltageSMUChannel()
 device = OssilaX200.OssilaX200(channels=[smu], **config.get_section('OssilaX200'))
 ```
 
-## Graphical User Interfaces <a name="graphical-user-interfaces"></a>
+<a name="graphical-user-interfaces"></a>
+## Graphical User Interfaces
 
 If you work with [Jupyter](https://jupyter.org/), you may use the Graphical User Interfaces (GUIs) which are implemented
 in the form of [Jupyter Widgets](https://ipywidgets.readthedocs.io/en/stable/).
@@ -294,18 +296,20 @@ Detailed guides to work with the GUIs can be found in the [documentation](https:
 
 ### Run an Experiment
 
-Follow the [Basic Usage](https://cohesivm.readthedocs.io/en/latest//getting_started/basic_usage.html) example to set up and run an 
+Follow the [Basic Usage](#basic-usage) example to set up and run an 
 [``Experiment``](https://cohesivm.readthedocs.io/en/latest/reference/experiment.html#cohesivm.experiment.Experiment). If you do not have all components ready yet, follow these tutorials:
 
-- [Implement a Device](https://cohesivm.readthedocs.io/en/latest//tutorials/device.html)
-- [Implement an Interface](https://cohesivm.readthedocs.io/en/latest//tutorials/interface.html)
-- [Implement a Measurement](https://cohesivm.readthedocs.io/en/latest//tutorials/measurement.html)
+- [Implement a Device](https://cohesivm.readthedocs.io/en/latest/tutorials/device.html)
+- [Implement an Interface](https://cohesivm.readthedocs.io/en/latest/tutorials/interface.html)
+- [Implement a Measurement](https://cohesivm.readthedocs.io/en/latest/tutorials/measurement.html)
 
-To follow the other examples you may just run the code from the [Basic Usage](https://cohesivm.readthedocs.io/en/latest//getting_started/basic_usage.html) 
+To follow the other examples, you may just run the code from the [Basic Usage](#basic-usage) 
 example even if you do not have access to the hardware. This will fail but create an HDF5 file and store an empty 
 dataset entry.
 
 ### Manage the Data
+
+#### List Datasets
 
 After you collected some data and stored it in an HDF5 file, you can use the [``Database``](https://cohesivm.readthedocs.io/en/latest/reference/database.html#cohesivm.database.Database) class
 to work with it. First, initialise the [``Database``](https://cohesivm.readthedocs.io/en/latest/reference/database.html#cohesivm.database.Database) object and list the samples which are stored
@@ -320,20 +324,23 @@ there:
 
 This is exactly the [``sample_id``](https://cohesivm.readthedocs.io/en/latest/reference/experiment.html#cohesivm.experiment.Experiment.sample_id) which was specified when the
 [``Experiment``](https://cohesivm.readthedocs.io/en/latest/reference/experiment.html#cohesivm.experiment.Experiment) was configured, and it can be used to retrieve the actual
-[``dataset``](https://cohesivm.readthedocs.io/en/latest/reference/experiment.html#cohesivm.experiment.Experiment.dataset) path in the [``Database``](https://cohesivm.readthedocs.io/en/latest/reference/database.html#cohesivm.database.Database) object:
+``dataset`` path in the [``Database``](https://cohesivm.readthedocs.io/en/latest/reference/database.html#cohesivm.database.Database) object:
 
 ```pycon
 >>> db.filter_by_sample_id('test_sample_42')
 ['/CurrentVoltageCharacteristic/55d96687ee75aa11:26464063430fe52f:a69a946e7a02e547:c8965a35118ce6fc:67a8bfb44702cfc7:8131a44cea4d4bb8/2024-07-01T10:44:59.033161-test_sample_42']
 ```
 
-The resulting list contains the path strings for all experiments with the specified
+The resulting list contains the path strings for all [``Dataset``](https://cohesivm.readthedocs.io/en/latest/reference/database.html#cohesivm.database.Dataset)s with the specified
 [``sample_id``](https://cohesivm.readthedocs.io/en/latest/reference/experiment.html#cohesivm.experiment.Experiment.sample_id) (currently only one entry). These strings get quite long because they
 contain the [``name``](https://cohesivm.readthedocs.io/en/latest/reference/measurements.html#cohesivm.measurements.Measurement.name) of the [``Measurement``](https://cohesivm.readthedocs.io/en/latest/reference/measurements.html#cohesivm.measurements.Measurement)
 procedure, followed by a hashed representation of the [``settings``](https://cohesivm.readthedocs.io/en/latest/reference/measurements.html#cohesivm.measurements.Measurement.settings) dictionary,
-and finally the datetime combined with the [``sample_id``](https://cohesivm.readthedocs.io/en/latest/reference/experiment.html#cohesivm.experiment.Experiment.sample_id). With this
-[``dataset``](https://cohesivm.readthedocs.io/en/latest/reference/experiment.html#cohesivm.experiment.Experiment.dataset) path, you may retrieve some information from the
-[``Metadata``](https://cohesivm.readthedocs.io/en/latest/reference/database.html#cohesivm.database.Metadata) object which got created by the [``Experiment``](https://cohesivm.readthedocs.io/en/latest/reference/experiment.html#cohesivm.experiment.Experiment):
+and finally the datetime combined with the [``sample_id``](https://cohesivm.readthedocs.io/en/latest/reference/experiment.html#cohesivm.experiment.Experiment.sample_id). 
+
+#### Access Metadata
+
+With a ``dataset`` path, you can retrieve information from the [``Metadata``](https://cohesivm.readthedocs.io/en/latest/reference/database.html#cohesivm.database.Metadata) object which was 
+created by the [``Experiment``](https://cohesivm.readthedocs.io/en/latest/reference/experiment.html#cohesivm.experiment.Experiment):
 
 ```pycon
 >>> dataset = db.filter_by_sample_id('test_sample_42')[0]
@@ -342,38 +349,61 @@ and finally the datetime combined with the [``sample_id``](https://cohesivm.read
 ('test_sample_42', 'Agilent4156C', 'MA8X8', 'CurrentVoltageCharacteristic')
 ```
 
-Storing a new dataset is less trivial because you need a fully qualified [``Metadata``](https://cohesivm.readthedocs.io/en/latest/reference/database.html#cohesivm.database.Metadata) object,
-which asks for a large number of arguments. Anyway, this is usually handled by the
-[``Experiment``](https://cohesivm.readthedocs.io/en/latest/reference/experiment.html#cohesivm.experiment.Experiment) class because it guarantees that the specified components are compatible. For
-testing, the [``Metadata``](https://cohesivm.readthedocs.io/en/latest/reference/database.html#cohesivm.database.Metadata) object from above may be used to initialize a new dataset:
+Creating a new [``Dataset``](https://cohesivm.readthedocs.io/en/latest/reference/database.html#cohesivm.database.Dataset) is less trivial because you need a fully qualified 
+[``Metadata``](https://cohesivm.readthedocs.io/en/latest/reference/database.html#cohesivm.database.Metadata) object, which asks for a large number of arguments. Anyway, this is usually 
+handled by the [``Experiment``](https://cohesivm.readthedocs.io/en/latest/reference/experiment.html#cohesivm.experiment.Experiment) class which also guarantees that the specified components 
+are compatible.
+
+As a test, you can use the [``Metadata``](https://cohesivm.readthedocs.io/en/latest/reference/database.html#cohesivm.database.Metadata) object from above to initialize a new 
+[``Dataset``](https://cohesivm.readthedocs.io/en/latest/reference/database.html#cohesivm.database.Dataset) in the database:
 
 ```pycon
 >>> db.initialize_dataset(metadata)
 '/CurrentVoltageCharacteristic/55d96687ee75aa11:26464063430fe52f:a69a946e7a02e547:c8965a35118ce6fc:67a8bfb44702cfc7:8131a44cea4d4bb8/2024-07-01T10:46:05.910371-test_sample_42'
 ```
 
-This yields practically the same ``dataset`` path as before, only the datetime is different. Adding data entries, on
-the other hand, is fairly simple because you only need to specify the ``dataset`` and the ``contact_id`` (alongside
-the ``data`` of course):
+This yields practically the same ``dataset`` path as before, only the datetime is different.
+
+#### Work with Data Entries
+
+Adding data entries to a [``Dataset``](https://cohesivm.readthedocs.io/en/latest/reference/database.html#cohesivm.database.Dataset) is fairly simple since you only need to specify the 
+``dataset`` path and the ``contact_id`` (alongside the ``data`` of course):
 
 ```pycon
->>> db.save_data(np.array([1]), dataset)
->>> db.save_data(np.array([42]), dataset, '1')
+>>> db.save_data(np.array([1], dtype=[('Quantity (Unit)', int)]), dataset)
+>>> db.save_data(np.array([42], dtype=[('Quantity (Unit)', int)]), dataset, '1')
 ```
 
-Finally, you may load a data entry by specifying the ``contact_id`` (or a list of several) or load an entire dataset,
-including the [``Metadata``](https://cohesivm.readthedocs.io/en/latest/reference/database.html#cohesivm.database.Metadata):
+You should use a [structured array](https://numpy.org/doc/stable/user/basics.rec.html) by providing a dtype with named
+fields because it facilitates to store the quantity and the unit alongside the data.
+
+Finally, you can load a data entry by specifying the ``contact_id``, several entries by using a list of IDs, or load an 
+entire [``Dataset``](https://cohesivm.readthedocs.io/en/latest/reference/database.html#cohesivm.database.Dataset), including the [``Metadata``](https://cohesivm.readthedocs.io/en/latest/reference/database.html#cohesivm.database.Metadata):
 
 ```pycon
 >>> db.load_data(dataset, '0')
-[array([1])]
+array([(1,)], dtype=[('Quantity (Unit)', '<i4')])
 >>> db.load_data(dataset, ['0', '1'])
-[array([1]), array([42])]
+[array([(1,)], dtype=[('Quantity (Unit)', '<i4')]),
+ array([(42,)], dtype=[('Quantity (Unit)', '<i4')])]
 >>> db.load_dataset(dataset)
-({'0': array([1]), '1': array([42])}, Metadata(CurrentVoltageCharacteristic, Agilent4156C, MA8X8))
+({'0': array([(1,)], dtype=[('Quantity (Unit)', '<i4')]),
+  '1': array([(42,)], dtype=[('Quantity (Unit)', '<i4')])},
+ 'Metadata(CurrentVoltageCharacteristic, Agilent4156C, MA8X8)')
 ```
 
-The [``Database``](https://cohesivm.readthedocs.io/en/latest/reference/database.html#cohesivm.database.Database) class also implements methods for filtering datasets based on
+To work with a [structured array](https://numpy.org/doc/stable/user/basics.rec.html), you need to know the names of the 
+fields which are stored in the ``dtype`` property. With this name, you can access the data of an individual field:
+
+```pycon
+>>> a = np.array([(1, 42)], dtype=[('Quantity1 (Unit1)', int), ('Quantity2 (Unit2)', int)])
+>>> a.dtype
+dtype([('Quantity1 (Unit1)', '<i4'), ('Quantity2 (Unit2)', '<i4')])
+>>> a['Quantity1 (Unit1)']
+array([1])
+```
+
+The [``Database``](https://cohesivm.readthedocs.io/en/latest/reference/database.html#cohesivm.database.Database) class also implements methods for filtering datasets based on the
 [``settings``](https://cohesivm.readthedocs.io/en/latest/reference/measurements.html#cohesivm.measurements.Measurement.settings) of the [``Measurement``](https://cohesivm.readthedocs.io/en/latest/reference/measurements.html#cohesivm.measurements.Measurement). Check out the 
 documentation of the [``filter_by_settings``](https://cohesivm.readthedocs.io/en/latest/reference/database.html#cohesivm.database.Database.filter_by_settings) and 
 [``filter_by_settings_batch``](https://cohesivm.readthedocs.io/en/latest/reference/database.html#cohesivm.database.Database.filter_by_settings_batch) to learn more.
@@ -384,13 +414,15 @@ The [``Analysis``](https://cohesivm.readthedocs.io/en/latest/reference/analysis.
 this will determine how the data is shaped and which features you want to extract from it. Therefore, the base class
 should be extended as explained in this tutorial:
 
-- [Implement an Analysis](https://cohesivm.readthedocs.io/en/latest//tutorials/analysis.html)
+- [Implement an Analysis](https://cohesivm.readthedocs.io/en/latest/tutorials/analysis.html)
 
 However, in the following example, the base class will be used to show the basic functionality.
 
-Since the [``MA8X8``](https://cohesivm.readthedocs.io/en/latest/reference/interfaces.html#cohesivm.interfaces.MA8X8) interface was used in the previous examples, the dataset should be filled
-with ``data`` accordingly. If you already have an HDF5 file from following the basic usage example ("Test.h5"), then
-this script should do the job:
+#### Generate Data
+
+Since the [``MA8X8``](https://cohesivm.readthedocs.io/en/latest/reference/interfaces.html#cohesivm.interfaces.MA8X8) interface was used in the previous examples, the initialized
+[``Dataset``](https://cohesivm.readthedocs.io/en/latest/reference/database.html#cohesivm.database.Dataset) should be filled with data accordingly. With the HDF5 file from 
+the [Basic Usage](#basic-usage) example, this script should do the job:
 
 ```python
 import numpy as np
@@ -401,7 +433,7 @@ db = Database('Test.h5')
 dataset = db.filter_by_sample_id('test_sample_42')[0]
 metadata = db.load_metadata(dataset)
 
-# create a new data to not interfere with previous examples
+# create a new dataset to not interfere with previous examples
 dataset = db.initialize_dataset(metadata)
 
 # iterate over contact_ids and save data arrays
@@ -412,9 +444,7 @@ for contact_id in metadata.contact_ids:
 data, metadata = db.load_dataset(dataset)
 ```
 
-This time, the [``save_data``](https://cohesivm.readthedocs.io/en/latest/reference/database.html#cohesivm.database.Database.save_data) method was used correctly (contrary to the previous
-examples) because the provided ``data`` should always be
-a [structured array](https://numpy.org/doc/stable/user/basics.rec.html).
+#### Define Functions
 
 Next, [``functions``](https://cohesivm.readthedocs.io/en/latest/reference/analysis.html#cohesivm.analysis.Analysis.functions) and [``plots``](https://cohesivm.readthedocs.io/en/latest/reference/analysis.html#cohesivm.analysis.Analysis.plots) must be defined:
 
@@ -427,9 +457,11 @@ Next, [``functions``](https://cohesivm.readthedocs.io/en/latest/reference/analys
 
 This approach seems too complex for what the function does, but it makes sense if you consider that this should be
 implemented in a separate [``Analysis``](https://cohesivm.readthedocs.io/en/latest/reference/analysis.html#cohesivm.analysis.Analysis) class. There, the data is stored as a property and the
-[``functions``](https://cohesivm.readthedocs.io/en/latest/reference/analysis.html#cohesivm.analysis.Analysis.functions) (i.e., methods) have direct access to it. Due to the use of structured
-arrays (which facilitate to store the quantity and the unit alongside the data), the label also needs to be stated
-explicitly. But, again, this will normally be available as a property.
+[``functions``](https://cohesivm.readthedocs.io/en/latest/reference/analysis.html#cohesivm.analysis.Analysis.functions) (i.e., methods) have direct access to it. Due to the use of 
+[structured arrays](https://numpy.org/doc/stable/user/basics.rec.html), the label also needs to be stated explicitly. But, again, this will normally be available as 
+a property of the class.
+
+#### With vs. without Metadata
 
 In the following, the class is initialized with and without using the [``Metadata``](https://cohesivm.readthedocs.io/en/latest/reference/database.html#cohesivm.database.Metadata) from the
 dataset. The former approach has the advantage that all available fields could be accessed by the
@@ -446,8 +478,11 @@ dataset. The former approach has the advantage that all available fields could b
 True
 ```
 
-The main usage of the [``Analysis``](https://cohesivm.readthedocs.io/en/latest/reference/analysis.html#cohesivm.analysis.Analysis), besides providing the framework for
-the [Analysis GUI](https://cohesivm.readthedocs.io/en/latest//guis/analysis.html), is to quickly generate maps of analysis results:
+#### Use the Class
+
+The main purposes of the [``Analysis``](https://cohesivm.readthedocs.io/en/latest/reference/analysis.html#cohesivm.analysis.Analysis) are bundling functions for quick data analysis 
+and providing the framework for the [Analysis GUI](https://cohesivm.readthedocs.io/en/latest/guis/analysis.html). But it is also useful to generate maps 
+of analysis results:
 
 ```pycon
 >>> analysis.generate_result_maps('Maximum')[0]
@@ -478,6 +513,35 @@ are licensed under the [CERN OHL v2 Permissive license](hardware/LICENSE).
 ## Contributing
 
 The contributing guidelines can be found [here](CONTRIBUTING.md).
+
+<a name="citation"></a>
+<a name="citation"></a>
+## Citation
+
+If you use this package for your research, please cite:
+
+> Wolf et al., (2025). _COHESIVM: Combinatorial h+/e- Sample Investigation using Voltaic Measurements._ 
+> Journal of Open Source Software, 10(106), 7291, 
+> [https://doi.org/10.21105/joss.07291](https://doi.org/10.21105/joss.07291)
+
+
+**BibTeX**
+
+```
+@article{
+    Wolf2025, 
+    doi = {10.21105/joss.07291}, 
+    url = {https://doi.org/10.21105/joss.07291}, 
+    year = {2025}, 
+    publisher = {The Open Journal}, 
+    volume = {10}, 
+    number = {106}, 
+    pages = {7291}, 
+    author = {Maximilian Wolf and Selina Götz and Georg K.h. Madsen and Theodoros Dimopoulos}, 
+    title = {COHESIVM: Combinatorial h+/e- Sample Investigation using Voltaic Measurements}, 
+    journal = {Journal of Open Source Software} 
+}
+```
 
 <a name="contact"></a>
 ## Contact

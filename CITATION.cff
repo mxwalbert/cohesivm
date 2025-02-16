@@ -1,0 +1,46 @@
+cff-version: "1.2.0"
+authors:
+- family-names: Wolf
+  given-names: Maximilian
+  orcid: "https://orcid.org/0000-0003-4917-7547"
+- family-names: Götz
+  given-names: Selina
+  orcid: "https://orcid.org/0000-0003-4962-153X"
+- family-names: Madsen
+  given-names: Georg K. H.
+  orcid: "https://orcid.org/0000-0001-9844-9145"
+- family-names: Dimopoulos
+  given-names: Theodoros
+  orcid: "https://orcid.org/0000-0002-3620-9645"
+doi: 10.5281/zenodo.14747442
+message: If you use this software, please cite our article in the
+  Journal of Open Source Software.
+preferred-citation:
+  authors:
+  - family-names: Wolf
+    given-names: Maximilian
+    orcid: "https://orcid.org/0000-0003-4917-7547"
+  - family-names: Götz
+    given-names: Selina
+    orcid: "https://orcid.org/0000-0003-4962-153X"
+  - family-names: Madsen
+    given-names: Georg K. H.
+    orcid: "https://orcid.org/0000-0001-9844-9145"
+  - family-names: Dimopoulos
+    given-names: Theodoros
+    orcid: "https://orcid.org/0000-0002-3620-9645"
+  date-published: 2025-02-05
+  doi: 10.21105/joss.07291
+  issn: 2475-9066
+  issue: 106
+  journal: Journal of Open Source Software
+  publisher:
+    name: Open Journals
+  start: 7291
+  title: "COHESIVM: Combinatorial h+/e- Sample Investigation using
+    Voltaic Measurements"
+  type: article
+  url: "https://joss.theoj.org/papers/10.21105/joss.07291"
+  volume: 10
+title: "COHESIVM: Combinatorial h+/e- Sample Investigation using Voltaic
+  Measurements"

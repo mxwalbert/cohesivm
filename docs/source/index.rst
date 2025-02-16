@@ -58,6 +58,7 @@ Learn more about the project on `GitHub <https://github.com/mxwalbert/cohesivm>`
    :caption: Getting Involved
 
    /getting_involved/contributing
+   /getting_involved/citation
    /getting_involved/contact
 
 .. toctree::

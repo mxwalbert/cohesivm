@@ -5,4 +5,5 @@
 - [Package Reference](#package-reference)
 - [License](#license)
 - [Contributing](#contributing)
+- [Citation](#citation)
 - [Contact](#contact)

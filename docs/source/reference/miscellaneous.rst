@@ -29,6 +29,9 @@ Exceptions
 Type Aliases
 ------------
 
+.. module:: cohesivm.database
+    :noindex:
+
 .. class:: DatabaseValue
 
 .. data:: cohesivm.database.DatabaseValue
@@ -56,21 +59,30 @@ Type Aliases
 Generics
 --------
 
-.. class:: cohesivm.channels.TChannel
+.. module:: cohesivm.channels
+    :noindex:
+
+.. class:: TChannel
 
 .. data:: cohesivm.channels.TChannel
     :noindex:
 
     A generic type which is bound to :class:`cohesivm.channels.Channel`.
 
-.. class:: cohesivm.devices.ossila.OssilaX200.TChannel
+.. module:: cohesivm.devices.ossila.OssilaX200
+    :noindex:
+
+.. class:: TChannel
 
 .. data:: cohesivm.devices.ossila.OssilaX200.TChannel
     :noindex:
 
     A generic type which is bound to :class:`cohesivm.devices.ossila..OssilaX200.OssilaX200Channel`.
 
-.. class:: cohesivm.devices.agilent.Agilent4156C.TChannel
+.. module:: cohesivm.devices.agilent.Agilent4156C
+    :noindex:
+
+.. class:: TChannel
 
 .. data:: cohesivm.devices.agilent.Agilent4156C.TChannel
     :noindex:

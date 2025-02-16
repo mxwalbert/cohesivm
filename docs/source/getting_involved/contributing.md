@@ -50,7 +50,7 @@ please follow these steps:
 
 ````{important}
 Please make sure to follow the project's structure. The best way to start is to have a look at the 
-[tutorials](https://cohesivm.readthedocs.io/en/latest/tutorials/overview.html).
+tutorials in the documentation.
 ````
 
 You may also contribute by submitting feature requests, bugs and other [issues over GitHub](https://github.com/mxwalbert/cohesivm/issues).
