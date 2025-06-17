@@ -1,5 +1,6 @@
 """This module contains the classes and utility functions for the data management."""
 from __future__ import annotations
+import re
 import sys
 import datetime
 import builtins
@@ -403,14 +404,12 @@ class Database:
         """The string length of the `self.timestamp`."""
         return len(self.timestamp)
 
-    def robust_datetime_id_split(self, datetime_id: str) -> Tuple[str, str]:
-        tz_string = '+00:00'
-        timestamp_size = self.timestamp_size
-        if datetime_id[:timestamp_size][-len(tz_string):] != tz_string:
-            timestamp_size -= len(tz_string)
-        timestamp = datetime_id[:timestamp_size]
-        sample_id = datetime_id[timestamp_size + 1:]
-        return timestamp, sample_id
+    @staticmethod
+    def robust_datetime_id_split(datetime_id: str) -> Tuple[str, str]:
+        pattern = r"^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:[+-]\d{2}:\d{2})?)-(.*)$"
+        match = re.match(pattern, datetime_id)
+        timestamp, sample_name = match.groups()
+        return timestamp, sample_name
 
     def initialize_dataset(self, m: Metadata) -> str:
         """Pre-structures the data in groups according to the metadata and returns the path of the dataset.

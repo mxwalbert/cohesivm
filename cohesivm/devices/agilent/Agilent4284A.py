@@ -37,7 +37,7 @@ class LCRChannel(LCRMeter):
         """Initializes the LCR meter channel of the Agilent 4284A."""
         self._identifier = 'lcr'
         self._settings = {
-            'TRIGGER:DELAY': f'{s_trigger_delay}:.3f',
+            'TRIGGER:DELAY': f'{s_trigger_delay:.3f}',
             'APERTURE': f'{s_integration_time},{s_averaging_rate}',
             'AMPLITUDE:ALC': 'ON' if s_automatic_level_control else 'OFF'
         }
