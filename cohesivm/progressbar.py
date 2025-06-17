@@ -1,6 +1,7 @@
 from __future__ import annotations
 import threading
 import contextlib
+import tqdm
 from typing import Generator
 from cohesivm.data_stream import DataStream
 from cohesivm.experiment import Experiment
@@ -44,13 +45,13 @@ class ProgressBar(DataStream):
             return
         try:
             if get_ipython().__class__.__name__ == 'ZMQInteractiveShell':
-                from tqdm import tqdm_notebook as tqdm
+                tqdm_pbar = tqdm.tqdm_notebook
             else:
                 raise NameError
         except NameError:
-            from tqdm import tqdm
-        self.progress_contacts = tqdm(total=self.num_contacts, desc='Contacts', leave=False, dynamic_ncols=True)
-        self.progress_datapoints = tqdm(total=self.num_datapoints, desc='Datapoints', leave=False, dynamic_ncols=True)
+            tqdm_pbar = tqdm.tqdm
+        self.progress_contacts = tqdm_pbar(total=self.num_contacts, desc='Contacts', leave=False, dynamic_ncols=True)
+        self.progress_datapoints = tqdm_pbar(total=self.num_datapoints, desc='Datapoints', leave=False, dynamic_ncols=True)
         thread = threading.Thread(target=self._update)
         thread.start()
         try:

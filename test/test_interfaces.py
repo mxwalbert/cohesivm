@@ -1,5 +1,4 @@
 import pytest
-import random
 import numpy as np
 from cohesivm import interfaces, config
 from cohesivm.database import Dimensions
@@ -52,8 +51,8 @@ def test_select_contact_valid_contact(interface):
 
 @pytest.mark.parametrize("interface", interfaces_to_be_tested)
 def test_select_contact_invalid_contact(interface):
-    contact_id = '999999999'
+    contact_id = ' '
     while contact_id in interface.contact_ids:
-        contact_id = str(random.randint(111111111, 999999999))
+        contact_id += ' '
     with pytest.raises(ValueError):
         interface.select_contact(contact_id)

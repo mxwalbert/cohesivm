@@ -403,6 +403,15 @@ class Database:
         """The string length of the `self.timestamp`."""
         return len(self.timestamp)
 
+    def robust_datetime_id_split(self, datetime_id: str) -> Tuple[str, str]:
+        tz_string = '+00:00'
+        timestamp_size = self.timestamp_size
+        if datetime_id[:timestamp_size][-len(tz_string):] != tz_string:
+            timestamp_size -= len(tz_string)
+        timestamp = datetime_id[:timestamp_size]
+        sample_id = datetime_id[timestamp_size + 1:]
+        return timestamp, sample_id
+
     def initialize_dataset(self, m: Metadata) -> str:
         """Pre-structures the data in groups according to the metadata and returns the path of the dataset.
 
@@ -453,8 +462,7 @@ class Database:
 
         :param dataset: Dataset path in the database.
         """
-        timestamp = dataset.split('/')[-1][:self.timestamp_size]
-        sample_id = dataset.split('/')[-1][self.timestamp_size + 1:]
+        timestamp, sample_id = self.robust_datetime_id_split(dataset.split('/')[-1])
         with h5py.File(self.path, "r+") as db:
             del db[f'SAMPLES/{sample_id}/{timestamp}']
             del db[dataset]
@@ -467,6 +475,16 @@ class Database:
         """
         with h5py.File(self.path, "a") as db:
             del db[f'{dataset}/{contact_id}']
+
+    def delete_sample(self, sample_id: str) -> None:
+        """Deletes all datasets related to the specified sample ID.
+
+        :param sample_id: ID of the sample to delete.
+        """
+        for dataset in self.filter_by_sample_id(sample_id):
+            self.delete_dataset(dataset)
+        with h5py.File(self.path, "r+") as db:
+            del db[f'SAMPLES/{sample_id}']
 
     def save_data(self, data: np.ndarray, dataset: str, contact_id: str = '0') -> None:
         """Stores a data array in the database. Overrides existing data.
@@ -496,6 +514,18 @@ class Database:
         with h5py.File(self.path, "r") as db:
             for contact_id in contact_ids:
                 data_loaded.append(db[f'{dataset}/{contact_id}'][()])
+        return data_loaded
+
+    def load_all_data(self, dataset: str) -> Dict[str, np.ndarray]:
+        """Loads all data arrays from a dataset.
+
+        :param dataset: Dataset path in the database.
+        :returns: A dictionary of contact IDs and corresponding loaded data arrays.
+        """
+        data_loaded = {}
+        with h5py.File(self.path, "r") as db:
+            for contact_id in db[dataset].keys():
+                data_loaded[contact_id] = db[f'{dataset}/{contact_id}'][()]
         return data_loaded
 
     def load_metadata(self, dataset: str) -> Metadata:
@@ -534,10 +564,7 @@ class Database:
         :param dataset: Dataset path in the database.
         :returns: A dictionary of contact IDs and loaded data arrays together with the corresponding metadata.
         """
-        data_loaded = {}
-        with h5py.File(self.path, "r") as db:
-            for contact_id in db[dataset].keys():
-                data_loaded[contact_id] = db[f'{dataset}/{contact_id}'][()]
+        data_loaded = self.load_all_data(dataset)
         metadata = self.load_metadata(dataset)
         return data_loaded, metadata
 

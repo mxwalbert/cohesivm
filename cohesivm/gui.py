@@ -606,6 +606,9 @@ class DatabaseGUI:
         results = self.database.filter_by_sample_id(button.description)
         self._update_results_frame(results)
 
+    def _delete_button_click(self, button) -> None:
+        pass
+
     def _update_results_frame(self, results=None) -> None:
         if results is None:
             self.results_frame.value = ''
@@ -614,14 +617,17 @@ class DatabaseGUI:
             result_rows = []
             for result in results:
                 row = []
-                _, measurement, _, datetime_sample = result.split('/')
-                measurement_datetime = datetime_sample[:26]
-                row.append(datetime.datetime.fromisoformat(measurement_datetime + '+00:00').astimezone(self.timezone))
-                row.append(measurement)
-                row.append(', '.join([str(v) for v in self.database.get_measurement_settings(result).values()]))
-                row.append(datetime_sample[27:])
-                row.append(self.database.get_dataset_length(result))
-                row.append(f'<a href="#" onclick="'
+                _, measurement, _, datetime_id_string = result.split('/')
+                timestamp, sample_id = self.database.robust_datetime_id_split(datetime_id_string)
+                measurement_datetime = datetime.datetime.fromisoformat(timestamp).astimezone(self.timezone)
+                row.append(measurement_datetime)                                                                     # 0
+                row.append(measurement)                                                                              # 1
+                row.append('\n'.join(                                                                                # 2
+                    [f'{k}={v}' for k, v in self.database.get_measurement_settings(result).items()]
+                ))
+                row.append(sample_id)                                                                                # 3
+                row.append(self.database.get_dataset_length(result))                                                 # 4
+                row.append(f'<a href="#" onclick="'                                                                  # 5
                            f'const old_icon = document.querySelector(\'i.fa-check\'); '
                            f'if (old_icon != null) {{ '
                            f'old_icon.classList.toggle(\'fa-clone\'); old_icon.classList.toggle(\'fa-check\'); }}'
@@ -635,8 +641,7 @@ class DatabaseGUI:
             result_rows = [f'<tr>'
                            f'<td>{row[0].strftime("%d.%m.%y")}</td>'
                            f'<td>{row[0].strftime("%H:%M:%S")}</td>'
-                           f'<td>{row[1]}</td>'
-                           f'<td>{row[2]}</td>'
+                           f'<td class="settings-info" title="{row[2]}">{row[1]}</td>'
                            f'<td>{row[3]}</td>'
                            f'<td>{row[4]}</td>'
                            f'<td>{row[5]}</td>'
@@ -646,7 +651,6 @@ class DatabaseGUI:
                             f'<th>Date</th>' \
                             f'<th>Time</th>' \
                             f'<th>Measurement</th>' \
-                            f'<th>Settings</th>' \
                             f'<th>Sample&nbsp;ID</th>' \
                             f'<th>Entries</th>' \
                             f'<th>Path</th>' \
@@ -784,11 +788,6 @@ style = f"""
     background-color: {state_colors['ABORTED']};
 }}
 
-.results-count {{
-    padding-right: 12px;
-    font-size: 120%;
-}}
-
 .buttons-frame {{
     margin-left: 2px;
     margin-right: 2px;
@@ -851,10 +850,16 @@ style = f"""
 
 .results-frame {{
     margin-top: 5px;
+    overflow: hidden;
 }}
 
 .results-frame:empty {{
     margin: 0;
+}}
+
+.results-count {{
+    padding-right: 12px;
+    font-size: 120%;
 }}
 
 .results-table {{
@@ -868,7 +873,6 @@ style = f"""
     border: 2px {state_colors['FINISHED']} solid;
     background-color: {state_colors['FINISHED']};
     color: #ffffff;
-    text-align: left;
     font-size: 120%;
 }}
 
@@ -876,11 +880,17 @@ style = f"""
 .results-table td {{
     padding: 12px 15px;
     line-height: 1.1;
+    text-align: center;
+}}
+
+.settings-info {{
+    cursor: help;
 }}
 
 .analysis-gui .results-table th,
 .analysis-gui .results-table td {{
     width: 50%;
+    text-align: left;
 }}
 
 .results-table tbody tr {{
