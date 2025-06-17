@@ -13,7 +13,7 @@ from cohesivm.data_stream import FakeQueue
 class CapacitanceVoltageProfiling(Measurement):
     """A Measurement class for obtaining the capacitance-voltage characteristic of a device.
 
-    :param frequency: The oscillator frequency of the applied AC field.
+    :param frequency: The oscillator frequency of the applied AC field in Hz.
     :param start_voltage: Begin of the measurement range in V.
     :param end_voltage: End of the measurement range in V.
     :param voltage_step: Voltage change for each datapoint in V. Must be larger than 0.
@@ -26,9 +26,9 @@ class CapacitanceVoltageProfiling(Measurement):
 
     _interface_type = HighLow
     _required_channels = [(LCRMeter,)]
-    _output_type = [('Magnitude (1)', float), ('Phase (deg)', float)]
+    _output_type = [('Voltage (V)', float), ('Magnitude (1)', float), ('Phase (deg)', float)]
 
-    def __init__(self, frequency: float, start_voltage: float, end_voltage: float, voltage_step: float,
+    def __init__(self, frequency: int, start_voltage: float, end_voltage: float, voltage_step: float,
                  oscillator_voltage: Union[float, False], oscillator_current: Union[float, False] = False) -> None:
         if voltage_step <= 0:
             raise ValueError('Voltage step must be larger than 0!')
@@ -81,7 +81,8 @@ class CapacitanceVoltageProfiling(Measurement):
                 device.channels[0].set_oscillator_voltage(self._oscillator_voltage)
             device.channels[0].set_oscillator_frequency(self._frequency)
             while (set_voltage < self._end_voltage) ^ inverse or set_voltage == self._end_voltage:
-                result = device.channels[0].measure_impedance()
+                device.channels[0].source_voltage(set_voltage)
+                result = (set_voltage, *device.channels[0].measure_impedance())
                 results.append(result)
                 data_stream.put(result)
                 set_voltage = round(set_voltage + self._voltage_step * (-1) ** inverse, self._round_digit)

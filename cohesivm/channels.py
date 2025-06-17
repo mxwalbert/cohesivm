@@ -159,7 +159,7 @@ class Channel(ABC):
         """
         raise NotImplementedError
 
-    def set_oscillator_frequency(self, frequency: float) -> None:
+    def set_oscillator_frequency(self, frequency: int) -> None:
         """Sets the AC frequency of the oscillator to the defined value.
 
         :param frequency: Oscillator frequency in Hz.

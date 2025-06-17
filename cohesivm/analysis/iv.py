@@ -65,7 +65,7 @@ class CurrentVoltageCharacteristic(Analysis):
         if the ``dataset`` contains no :class:`~cohesivm.database.Metadata`.
     :param illuminated: Flags if the sample was illuminated during measurement. Required if the ``dataset`` contains no
         :class:`~cohesivm.database.Metadata`.
-    :param power_in: he power of the input radiation source in W/mm^2. Required if the ``dataset`` contains no
+    :param power_in: The power of the input radiation source in W/mm^2. Required if the ``dataset`` contains no
         :class:`~cohesivm.database.Metadata`.
     """
 

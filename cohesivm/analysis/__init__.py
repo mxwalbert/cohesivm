@@ -156,7 +156,9 @@ def plot_result_map(result_map: np.ndarray, title: str = None,
         ax.set_title(title)
     ax.set_xticks([])
     ax.set_yticks([])
-    tick_values = [np.nanmin(result_map), np.nanmean(result_map), np.nanmax(result_map)]
+    tick_min = np.nanmin(result_map) if vrange[0] is None else vrange[0]
+    tick_max = np.nanmax(result_map) if vrange[1] is None else vrange[1]
+    tick_values = [tick_min, np.nanmean(result_map), tick_max]
     cbar = fig.colorbar(img, ax=ax, cax=cax, orientation="horizontal", ticks=tick_values)
     cbar.ax.xaxis.set_major_formatter(matplotlib.ticker.FormatStrFormatter('%.2f'))
     plt.tight_layout()

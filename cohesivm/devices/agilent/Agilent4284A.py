@@ -8,7 +8,6 @@ try:
 except ImportError:
     raise ImportError("Package 'pyvisa' is not installed.")
 import pyvisa
-import time
 import math
 import warnings
 from typing import List, Any, Tuple
@@ -21,8 +20,8 @@ class LCRChannel(LCRMeter):
     resistance (R) of an electronic component. For more details and specifications see the user manual of the
     Agilent 4284A.
 
-    :param s_trigger_delay: Setting for the delay of the trigger execution after the command was sent. The value is
-        the time in ms and must be between 0 and 60 s.
+    :param s_trigger_delay: Setting for the delay of the trigger execution after the command was sent. The value
+        must be between 0 and 60 s with ms resolution.
     :param s_integration_time: Sets the time required to perform an A/D conversion. The value can be one of 'SHORT',
         'MEDIUM', 'LONG'.
     :param s_averaging_rate: Sets the number of individual measurements which are averaged to yield the final
@@ -33,12 +32,12 @@ class LCRChannel(LCRMeter):
     :raises ValueError: If setting values are out of bounds.
     """
 
-    def __init__(self, s_trigger_delay: int = 1, s_integration_time: str = 'MEDIUM', s_averaging_rate: int = 64,
+    def __init__(self, s_trigger_delay: float = 0.1, s_integration_time: str = 'MEDIUM', s_averaging_rate: int = 1,
                  s_automatic_level_control: bool = False) -> None:
         """Initializes the LCR meter channel of the Agilent 4284A."""
         self._identifier = 'lcr'
         self._settings = {
-            'TRIGGER:DELAY': f'{s_trigger_delay}',
+            'TRIGGER:DELAY': f'{s_trigger_delay}:.3f',
             'APERTURE': f'{s_integration_time},{s_averaging_rate}',
             'AMPLITUDE:ALC': 'ON' if s_automatic_level_control else 'OFF'
         }
@@ -60,6 +59,14 @@ class LCRChannel(LCRMeter):
         """
         return self.connection.query(command)
 
+    def wait_for_completion(self) -> None:
+        """Sends an ASCII query to check if the operation on the device is finished. Waits for the response with an
+        increased timeout."""
+        old_timeout = self.connection.timeout
+        self.connection.timeout = 1000000
+        self.connection.query('*OPC?')
+        self.connection.timeout = old_timeout
+
     def set_property(self, name: str, value: Any = None) -> None:
         if value is None:
             self._write(name)
@@ -71,11 +78,11 @@ class LCRChannel(LCRMeter):
 
     def _check_settings(self) -> None:
         try:
-            trigger_delay = int(self._settings['TRIGGER:DELAY'])
+            trigger_delay = float(self._settings['TRIGGER:DELAY'])
         except ValueError:
-            raise TypeError('Setting `TRIGGER:DELAY` cannot be cast to int!')
-        if trigger_delay < 0 or trigger_delay > 60000:
-            raise ValueError('Setting `TRIGGER:DELAY` must be between 0 and 60000!')
+            raise TypeError('Setting `TRIGGER:DELAY` cannot be cast to float!')
+        if trigger_delay < 0 or trigger_delay > 60:
+            raise ValueError('Setting `TRIGGER:DELAY` must be between 0 and 60!')
         self._trigger_delay = trigger_delay
         self._settings['TRIGGER:DELAY'] = f'{trigger_delay}'
         try:
@@ -103,14 +110,11 @@ class LCRChannel(LCRMeter):
         self.set_property('TRIGGER:SOURCE', 'BUS')
         self.set_property('INITIATE:CONTINUOUS', 'ON')
         self.set_property('OUTPUT:HPOWER', 'ON')
-        self.set_property('BIAS:STATE', 'ON')
 
     def disable(self) -> None:
-        self.set_property('*RST;*CLS')
         self.set_property('ABORT')
-        self.source_voltage(0)
-        self.source_current(0)
         self.set_property('BIAS:STATE', 'OFF')
+        self.set_property('*RST;*CLS')
 
     def source_voltage(self, voltage: float) -> None:
         """Resets the bias current and sets the bias voltage to the defined value.
@@ -135,6 +139,7 @@ class LCRChannel(LCRMeter):
         else:
             voltage = round(voltage, 3)
         self.set_property('BIAS:VOLTAGE', f'{voltage:.3f}')
+        self.set_property('BIAS:STATE', 'ON')
 
     def source_current(self, current: float) -> None:
         """Resets the bias voltage and sets the bias current to the defined value.
@@ -157,6 +162,7 @@ class LCRChannel(LCRMeter):
         else:
             current = round(current, 5)
         self.set_property('BIAS:CURRENT', f'{current:.5f}')
+        self.set_property('BIAS:STATE', 'ON')
 
     def set_oscillator_frequency(self, frequency: float) -> None:
         """Sets the AC frequency of the oscillator to the defined value.
@@ -206,8 +212,8 @@ class LCRChannel(LCRMeter):
         self.set_property('CURRENT', f'{current:.5f}')
 
     def measure_impedance(self) -> Tuple[float, float]:
-        self.set_property('TRIGGER:IMMEDIATE')
-        time.sleep(self._trigger_delay / 1000)
+        self.set_property('TRIGGER')
+        self.wait_for_completion()
         result = self.get_property('FETCH').split(',')
         if result[2] != '0':
             warnings.warn(f'Fetching the data resulted in the following unusual status code: {result[2]}')
